@@ -951,7 +951,7 @@ AddParameter("PlanId", parameters, targetPlan.Id.ToString());
         {
             ITestPlan targetPlan;
             targetPlan = targetTestStore.CreateTestPlan();
-            targetPlan.CopyPropertiesFrom(sourcePlan);
+            //targetPlan.CopyPropertiesFrom(sourcePlan);
             targetPlan.Name = newPlanName;
             targetPlan.StartDate = sourcePlan.StartDate;
             targetPlan.EndDate = sourcePlan.EndDate;
