@@ -75,6 +75,7 @@ namespace VstsSyncMigrator.Engine.Configuration
             ec.Processors.Add(new TestVariablesMigrationConfig());
             ec.Processors.Add(new TestConfigurationsMigrationConfig());
             ec.Processors.Add(new TestPlansAndSuitesMigrationConfig());
+            ec.Processors.Add(new TestPlansSuitesAndCasesMigrationConfig());
             //ec.Processors.Add(new TestRunsMigrationConfig());
         }
 

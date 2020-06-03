@@ -48,7 +48,7 @@ namespace VstsSyncMigrator.Engine
             _config = config;
             PopulateIgnoreList();
 
-            VssClientCredentials adoCreds = new VssClientCredentials();
+            //VssClientCredentials adoCreds = new VssClientCredentials();
 
             // Retrieve an instance of WorkItemTrackingHttpClient from the TargetCollection
             // to avoid unnecessary sign in prompt

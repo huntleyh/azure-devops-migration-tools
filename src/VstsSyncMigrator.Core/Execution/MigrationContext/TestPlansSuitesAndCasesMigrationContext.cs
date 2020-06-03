@@ -16,7 +16,7 @@ using WorkItem = Microsoft.TeamFoundation.WorkItemTracking.Client.WorkItem;
 
 namespace VstsSyncMigrator.Engine
 {
-    public class TestPlandsAndSuitesMigrationContext : MigrationContextBase
+    public class TestPlansSuitesAndCasesMigrationContext : MigrationContextBase
     {
         MigrationEngine engine;
 
@@ -28,14 +28,17 @@ namespace VstsSyncMigrator.Engine
         TestManagementContext targetTestStore;
         ITestConfigurationCollection targetTestConfigs;
 
-        TestPlansAndSuitesMigrationConfig config;
+        Project targetProject;
+
+        TestPlansSuitesAndCasesMigrationConfig config;
 
         IIdentityManagementService sourceIdentityManagementService;
         IIdentityManagementService targetIdentityManagementService;
 
+        WorkItemMigrator _workItemMigrator;
+
         int _currentPlan = 0;
         int _totalPlans = 0;
-        long _elapsedms = 0;
         int __currentSuite = 0;
         int __totalSuites = 0;
         int _currentTestCases = 0;
@@ -45,11 +48,11 @@ namespace VstsSyncMigrator.Engine
         {
             get
             {
-                return "TestPlansAndSuitesMigrationContext";
+                return "TestPlansSuitesAndCasesMigrationContext";
             }
         }
 
-        public TestPlandsAndSuitesMigrationContext(MigrationEngine me, TestPlansAndSuitesMigrationConfig config) : base(me, config)
+        public TestPlansSuitesAndCasesMigrationContext(MigrationEngine me, TestPlansSuitesAndCasesMigrationConfig config) : base(me, config)
         {
             this.engine = me;
             sourceWitStore = new WorkItemStoreContext(me.Source, WorkItemStoreFlags.None);
@@ -61,6 +64,10 @@ namespace VstsSyncMigrator.Engine
             sourceIdentityManagementService = me.Source.Collection.GetService<IIdentityManagementService>();
             targetIdentityManagementService = me.Target.Collection.GetService<IIdentityManagementService>();
             this.config = config;
+
+            this.targetProject = targetWitStore.GetProject();
+
+            this._workItemMigrator = new WorkItemMigrator(new WorkItemMigratorConfig(this.engine));
         }
 
         private void TraceWriteLine(ITestPlan sourcePlan, string message = "", int indent = 0, bool header = false)
@@ -130,7 +137,7 @@ namespace VstsSyncMigrator.Engine
                 toProcess = sourcePlans.ToList();
             }
 
-            Trace.WriteLine(string.Format("Plan to copy {0} Plans?", toProcess.Count()), "TestPlansAndSuites");
+            Trace.WriteLine(string.Format("Plan to copy {0} Plans?", toProcess.Count()), "TestPlansSuitesAndCases");
             _currentPlan = 0;
             _totalPlans = toProcess.Count();
 
@@ -327,6 +334,16 @@ namespace VstsSyncMigrator.Engine
             return targetPlanWorkItem.Tags.Contains("migrated");
         }
 
+        private bool CanSkipTestCaseBecauseOfTags(int workItemId)
+        {
+            if (config.OnlyElementsWithTag == null)
+            {
+                return false;
+            }
+            var sourcePlanWorkItem = sourceWitStore.Store.GetWorkItem(workItemId);
+            var tagWhichMustBePresent = config.OnlyTestCasesWithTag;
+            return !sourcePlanWorkItem.Tags.Contains(tagWhichMustBePresent);
+        }
         private bool CanSkipElementBecauseOfTags(int workItemId)
         {
             if (config.OnlyElementsWithTag == null)
@@ -392,8 +409,15 @@ namespace VstsSyncMigrator.Engine
 
                             if (targetReq == null)
                             {
-                                TraceWriteLine(sourceSuite, "            Target work item not found", 5);
-                                break;
+                                if (MigrateTestCase(sourceReq))
+                                {
+                                    targetReq = targetWitStore.FindReflectedWorkItemByReflectedWorkItemId(sourceReq);
+                                }
+                                if (targetReq == null)
+                                {
+                                    TraceWriteLine(sourceSuite, "            Target work item not found", 5);
+                                    break;
+                                }
                             }
                         }
                         catch (Exception)
@@ -468,7 +492,7 @@ namespace VstsSyncMigrator.Engine
                         CompareOptions.IgnoreCase) >= 0)
                 {
                     string regExSearchForSystemId = @"(\[System.Id\]\s*=\s*[\d]*)";
-                    string regExSearchForSystemId2 = @"(\[System.Id\]\s*IN\s*)";
+                    //string regExSearchForSystemId2 = @"(\[System.Id\]\s*IN\s*)";
 
                     MatchCollection matches = Regex.Matches(dynamic.Query.QueryText, regExSearchForSystemId, RegexOptions.IgnoreCase);
 
@@ -519,7 +543,6 @@ namespace VstsSyncMigrator.Engine
             if (CanSkipElementBecauseOfTags(source.Id))
                 return;
 
-
             _totalTestCases = source.TestCases.Count;
             _currentTestCases = 0;
             AddMetric("TestCaseCount", metrics, _totalTestCases);
@@ -530,15 +553,23 @@ namespace VstsSyncMigrator.Engine
                 _currentTestCases++;
                 TraceWriteLine(source, $"Work item: {sourceTestCaseEntry.Id}", 15);
 
-                if (CanSkipElementBecauseOfTags(sourceTestCaseEntry.Id))
+                if (CanSkipTestCaseBecauseOfTags(sourceTestCaseEntry.Id))
                     return;
 
                 TraceWriteLine(source, string.Format("    Processing {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
                 WorkItem wi = targetWitStore.FindReflectedWorkItem(sourceTestCaseEntry.TestCase.WorkItem, false);
                 if (wi == null)
                 {
-                    TraceWriteLine(source, string.Format("    Can't find work item for Test Case. Has it been migrated? {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
-                    continue;
+                    if (MigrateTestCase(sourceTestCaseEntry.TestCase.WorkItem))
+                    {
+                        wi = targetWitStore.FindReflectedWorkItem(sourceTestCaseEntry.TestCase.WorkItem, false);
+                    }
+
+                    if (wi == null)
+                    {
+                        TraceWriteLine(source, string.Format("    Can't find work item for Test Case. Has it been migrated? {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
+                        continue;
+                    }
                 }
                 var exists = (from tc in target.TestCases
                               where tc.TestCase.WorkItem.Id == wi.Id
@@ -551,6 +582,7 @@ namespace VstsSyncMigrator.Engine
                 else
                 {
                     ITestCase targetTestCase = targetTestStore.Project.TestCases.Find(wi.Id);
+
                     if (targetTestCase == null)
                     {
                         TraceWriteLine(source, string.Format("    ERROR: Test case not found {0} : {1} - {2} ", sourceTestCaseEntry.EntryType, sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
@@ -574,6 +606,24 @@ namespace VstsSyncMigrator.Engine
             stopwatch.Stop();
             _totalTestCases = 0;
             _currentTestCases = 0;
+        }
+        /// <summary>
+        /// Migrates the specific test case work item to the 
+        /// Target AzDo/TFS instance
+        /// </summary>
+        /// <param name="workItem"></param>
+        /// <returns></returns>
+        private bool MigrateTestCase(WorkItem workItem)
+        {
+            try
+            {
+                return this._workItemMigrator.ProcessWorkItem(this.sourceWitStore, this.targetWitStore, this.targetProject, workItem);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceError(ex.ToString());
+            }
+            return false;
         }
 
         /// <summary>
@@ -702,6 +752,13 @@ namespace VstsSyncMigrator.Engine
                 // find target testcase id for this source tce
                 WorkItem targetTc = targetWitStore.FindReflectedWorkItem(sourceTce.TestCase.WorkItem, false);
 
+                if(targetTc == null)
+                {
+                    if(MigrateTestCase(sourceTce.TestCase.WorkItem))
+                    {
+                        targetTc = targetWitStore.FindReflectedWorkItem(sourceTce.TestCase.WorkItem, false);
+                    }
+                }
                 if (targetTc == null)
                 {
                     Trace.TraceError($"Target Reflected Work Item Not found for source WorkItem ID: {sourceTce.TestCase.WorkItem.Id}");
@@ -954,7 +1011,7 @@ namespace VstsSyncMigrator.Engine
         {
             ITestPlan targetPlan;
             targetPlan = targetTestStore.CreateTestPlan();
-            targetPlan.CopyPropertiesFrom(sourcePlan);
+            //targetPlan.CopyPropertiesFrom(sourcePlan);
             targetPlan.Name = newPlanName;
             targetPlan.StartDate = sourcePlan.StartDate;
             targetPlan.EndDate = sourcePlan.EndDate;

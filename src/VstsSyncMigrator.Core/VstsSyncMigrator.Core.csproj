@@ -345,6 +345,7 @@
     <Compile Include="Configuration\FieldMap\FieldValueMapConfig.cs" />
     <Compile Include="Configuration\FieldMap\IFieldMapConfig.cs" />
     <Compile Include="Configuration\JsonCreationConverter.cs" />
+    <Compile Include="Configuration\Processing\TestPlansSuitesAndCasesMigrationConfig.cs" />
     <Compile Include="Configuration\Processing\WorkItemQueryMigrationConfig.cs" />
     <Compile Include="Configuration\Processing\FixGitCommitLinksConfig.cs" />
     <Compile Include="Configuration\Processing\TeamMigrationConfig.cs" />
@@ -376,7 +377,9 @@
     <Compile Include="Execution\FieldMaps\IFieldMap.cs" />
     <Compile Include="Execution\ComponentContext\TestManagementContext.cs" />
     <Compile Include="Execution\FieldMaps\FieldToTagFieldMap.cs" />
+    <Compile Include="Execution\MigrationContext\TestPlansSuitesAndCasesMigrationContext.cs" />
     <Compile Include="Execution\MigrationContext\WorkItemMigrationContext.cs" />
+    <Compile Include="Execution\MigrationContext\WorkItemMigrator.cs" />
     <Compile Include="Execution\MigrationContext\WorkItemQueryMigrationContext.cs" />
     <Compile Include="Execution\MigrationContext\MigrationContextBase.cs" />
     <Compile Include="Execution\ComponentContext\ITeamProjectContext.cs" />
