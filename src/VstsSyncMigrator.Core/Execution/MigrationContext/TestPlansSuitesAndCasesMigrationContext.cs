@@ -145,10 +145,12 @@ namespace VstsSyncMigrator.Engine
             {
                 _currentPlan++;
                 if (CanSkipElementBecauseOfTags(sourcePlan.Id))
+                {
+                    TraceWriteLine(sourcePlan, $"Skipping {sourcePlan.Name}", 5);
+
                     continue;
-
+                }
                 ProcessTestPlan(sourcePlan);
-
             }
             _currentPlan = 0;
             _totalPlans = 0;
@@ -358,7 +360,10 @@ namespace VstsSyncMigrator.Engine
         private void ProcessTestSuite(ITestSuiteBase sourceSuite, ITestSuiteBase targetParent, ITestPlan targetPlan)
         {
             if (CanSkipElementBecauseOfTags(sourceSuite.Id))
+            {
+                TraceWriteLine(sourceSuite, $"    Skipping {sourceSuite.TestSuiteType} : {sourceSuite.Id} - {sourceSuite.Title} ", 5);
                 return;
+            }
             //////////////////////////////////////////
             var stopwatch = Stopwatch.StartNew();
             var starttime = DateTime.Now;
@@ -541,8 +546,10 @@ namespace VstsSyncMigrator.Engine
             targetPlan.RefreshRootSuite();
 
             if (CanSkipElementBecauseOfTags(source.Id))
+            {
+                TraceWriteLine(source, $"    Skipping {source.TestSuiteType} : {source.Id} - {source.Title} ", 5);
                 return;
-
+            }
             _totalTestCases = source.TestCases.Count;
             _currentTestCases = 0;
             AddMetric("TestCaseCount", metrics, _totalTestCases);
@@ -554,7 +561,10 @@ namespace VstsSyncMigrator.Engine
                 TraceWriteLine(source, $"Work item: {sourceTestCaseEntry.Id}", 15);
 
                 if (CanSkipTestCaseBecauseOfTags(sourceTestCaseEntry.Id))
+                {
+                    TraceWriteLine(source, string.Format("    SKIPPING {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
                     return;
+                }
 
                 TraceWriteLine(source, string.Format("    Processing {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
                 WorkItem wi = targetWitStore.FindReflectedWorkItem(sourceTestCaseEntry.TestCase.WorkItem, false);
