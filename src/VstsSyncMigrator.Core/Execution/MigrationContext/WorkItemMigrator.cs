@@ -360,6 +360,7 @@ namespace VstsSyncMigrator.Engine
 
         private void PopulateWorkItem(WorkItem oldWi, WorkItem newwit, string destType)
         {
+            bool stateTransition = false;
             var newWorkItemstartTime = DateTime.UtcNow;
             var fieldMappingTimer = Stopwatch.StartNew();
 
@@ -367,6 +368,12 @@ namespace VstsSyncMigrator.Engine
             {
                 newwit.Open();
             }
+            // Handle state transitions to ensure we do not override the
+            // AssignedTo field in the cases where a work item is initially 
+            // being activated. By default we take the identity of the user making the change
+            // We want to avoid this in these scenarios and retain the assigned user from 
+            // the old work item.
+            stateTransition = (oldWi.State != newwit.State);
 
             newwit.Title = oldWi.Title;
             newwit.State = oldWi.State;
@@ -378,6 +385,11 @@ namespace VstsSyncMigrator.Engine
                 {
                     newwit.Fields[f.ReferenceName].Value = oldWi.Fields[f.ReferenceName].Value;
                 }
+            }
+
+            if(stateTransition && oldWi.Fields["System.AssignedTo"].Value != null)
+            {
+                newwit.Fields["System.AssignedTo"].Value = oldWi.Fields["System.AssignedTo"].Value;
             }
 
             newwit.AreaPath = GetNewNodeName(oldWi.AreaPath, oldWi.Project.Name, newwit.Project.Name, newwit.Store, "Area");
