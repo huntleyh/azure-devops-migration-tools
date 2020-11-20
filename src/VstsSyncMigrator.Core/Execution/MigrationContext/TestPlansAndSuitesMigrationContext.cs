@@ -770,6 +770,38 @@ namespace VstsSyncMigrator.Engine
         }
 
         /// <summary>
+        /// Read the specific user email that matches our <paramref name="searchFactorValue"/>
+        /// </summary>
+        /// <param name="idSvc"></param>
+        /// <param name="searchFactor"></param>
+        /// <param name="searchFactorValue"></param>
+        /// <param name="queryMembership"></param>
+        /// <param name="readOptions"></param>
+        /// <returns></returns>
+        private TeamFoundationIdentity ReadIdentity(IIdentityManagementService idSvc, IdentitySearchFactor searchFactor, string searchFactorValue, 
+                                                    MembershipQuery queryMembership, ReadIdentityOptions readOptions)
+        {
+            TeamFoundationIdentity result = null;
+            TeamFoundationIdentity[] allIdentities = idSvc.ReadIdentities(searchFactor, new string[1]
+            {
+                    searchFactorValue
+            }, queryMembership, readOptions)[0];
+
+            foreach (TeamFoundationIdentity teamFoundationIdentity in allIdentities)
+            {
+                if (teamFoundationIdentity.IsActive 
+                        && 
+                    (searchFactor == IdentitySearchFactor.MailAddress) ? 
+                    string.Equals(teamFoundationIdentity.UniqueName, searchFactorValue, StringComparison.CurrentCultureIgnoreCase)
+                    : string.Equals(teamFoundationIdentity.DisplayName, searchFactorValue, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    result = teamFoundationIdentity;
+                }
+            }
+
+            return result;
+        }
+        /// <summary>
         /// Retrieve the target identity for a given source descriptor
         /// </summary>
         /// <param name="sourceIdentityDescriptor">Source identity Descriptor</param>
@@ -796,7 +828,7 @@ namespace VstsSyncMigrator.Engine
             if (!string.IsNullOrEmpty(sourceIdentityMail))
             {
                 // translate source assignedto name to target identity
-                var targetIdentity = targetIdentityManagementService.ReadIdentity(
+                var targetIdentity = ReadIdentity(targetIdentityManagementService, //.ReadIdentity(
                     IdentitySearchFactor.MailAddress,
                     sourceIdentityMail,
                     MembershipQuery.Direct,
@@ -804,7 +836,7 @@ namespace VstsSyncMigrator.Engine
 
                 if (targetIdentity == null)
                 {
-                    targetIdentity = targetIdentityManagementService.ReadIdentity(
+                    targetIdentity = ReadIdentity(targetIdentityManagementService, //.ReadIdentity(
                         IdentitySearchFactor.AccountName,
                         sourceIdentityMail,
                         MembershipQuery.Direct,
