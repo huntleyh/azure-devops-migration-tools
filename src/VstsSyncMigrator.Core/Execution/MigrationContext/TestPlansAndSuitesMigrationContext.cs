@@ -792,7 +792,9 @@ namespace VstsSyncMigrator.Engine
                 if (teamFoundationIdentity.IsActive 
                         && 
                     (searchFactor == IdentitySearchFactor.MailAddress) ? 
+                    // Search by email address
                     string.Equals(teamFoundationIdentity.UniqueName, searchFactorValue, StringComparison.CurrentCultureIgnoreCase)
+                    //TODO: search by account name
                     : string.Equals(teamFoundationIdentity.DisplayName, searchFactorValue, StringComparison.CurrentCultureIgnoreCase))
                 {
                     result = teamFoundationIdentity;
