@@ -14,107 +14,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="AzureAD\AuthenticationHelper.cs" />
-    <Compile Include="AzureAD\Constants.cs" />
-    <Compile Include="Commands\CommandBase.cs" />
-    <Compile Include="Commands\ExportAzureADGroups\AzureAdGroupItem.cs" />
-    <Compile Include="Commands\ExportAzureADGroups\ExportADGroupsCommand.cs" />
-    <Compile Include="Commands\ExportAzureADGroups\ExportADGroupsOptions.cs" />
-    <Compile Include="Commands\OptionsBase.cs" />
-    <Compile Include="Configuration\EngineConfiguration.cs" />
-    <Compile Include="Configuration\FieldMap\FieldMapConfigJsonConverter.cs" />
-    <Compile Include="Configuration\FieldMap\FieldBlankMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldtoFieldMultiMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\MultiValueConditionalMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldValuetoTagMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\TreeToTagMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldMergeMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\RegexFieldMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldtoTagMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldtoFieldMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\FieldValueMapConfig.cs" />
-    <Compile Include="Configuration\FieldMap\IFieldMapConfig.cs" />
-    <Compile Include="Configuration\JsonCreationConverter.cs" />
-    <Compile Include="Configuration\Processing\TestPlansSuitesAndCasesMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemQueryMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\FixGitCommitLinksConfig.cs" />
-    <Compile Include="Configuration\Processing\TeamMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemUpdateAreasAsTagsConfig.cs" />
-    <Compile Include="Configuration\Processing\FakeProcessorConfig.cs" />
-    <Compile Include="Configuration\Processing\ExportProfilePictureFromADConfig.cs" />
-    <Compile Include="Configuration\Processing\ImportProfilePictureConfig.cs" />
-    <Compile Include="Configuration\Processing\TestRunsMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\TestPlansAndSuitesMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\TestConfigurationsMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\TestVeriablesMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemDeleteConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemPostProcessingConfig.cs" />
-    <Compile Include="Configuration\Processing\ProcessorConfigJsonConverter.cs" />
-    <Compile Include="Configuration\Processing\ITfsProcessingConfig.cs" />
-    <Compile Include="Configuration\Processing\NodeStructuresMigrationConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemUpdateConfig.cs" />
-    <Compile Include="Configuration\Processing\WorkItemMigrationConfig.cs" />
-    <Compile Include="Configuration\TeamProjectConfig.cs" />
-    <Compile Include="Execution\Exceptions\UnknownLinkTypeException.cs" />
-    <Compile Include="Execution\FieldMaps\FieldMapBase.cs" />
-    <Compile Include="Execution\FieldMaps\FieldMergeMap.cs" />
-    <Compile Include="Execution\FieldMaps\FieldBlankMap.cs" />
-    <Compile Include="Execution\FieldMaps\FieldToFieldMap.cs" />
-    <Compile Include="Execution\FieldMaps\FieldtoFieldMultiMap.cs" />
-    <Compile Include="Execution\FieldMaps\MultiValueConditionalMap.cs" />
-    <Compile Include="Execution\FieldMaps\FieldValuetoTagMap.cs" />
-    <Compile Include="Execution\FieldMaps\FieldValueMap.cs" />
-    <Compile Include="Execution\FieldMaps\IFieldMap.cs" />
-    <Compile Include="Execution\ComponentContext\TestManagementContext.cs" />
-    <Compile Include="Execution\FieldMaps\FieldToTagFieldMap.cs" />
-    <Compile Include="Execution\MigrationContext\TestPlansSuitesAndCasesMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\WorkItemMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\WorkItemMigrator.cs" />
-    <Compile Include="Execution\MigrationContext\WorkItemQueryMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\MigrationContextBase.cs" />
-    <Compile Include="Execution\ComponentContext\ITeamProjectContext.cs" />
-    <Compile Include="Execution\ComponentContext\IWitdMapper.cs" />
-    <Compile Include="Execution\ComponentContext\DescreteWitdMapper.cs" />
-    <Compile Include="Execution\MigrationContext\NodeStructuresMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\TestConfigurationsMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\TestRunsMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\TestVeriablesMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\FakeProcessor.cs" />
-    <Compile Include="Execution\MigrationContext\TeamMigrationContext.cs" />
-    <Compile Include="Execution\MigrationContext\WorkItemPostProcessingContext.cs" />
-    <Compile Include="Execution\OMatics\AttachmentOMatic.cs" />
-    <Compile Include="Execution\OMatics\EmbededImagesRepairOMatic.cs" />
-    <Compile Include="Execution\OMatics\RepoOMatic.cs" />
-    <Compile Include="Execution\OMatics\WorkItemLinkOMatic.cs" />
-    <Compile Include="Execution\ProcessingContext\ExportTeamList.cs" />
-    <Compile Include="Execution\ProcessingContext\FixGitCommitLinks.cs" />
-    <Compile Include="Execution\ProcessingContext\WorkItemDelete.cs" />
-    <Compile Include="Execution\ProcessingContext\CreateTeamFolders.cs" />
-    <Compile Include="ObjectModelExtensions.cs" />
-    <Compile Include="ProcessingEngine.cs" />
-    <Compile Include="MigrationEngine.cs" />
-    <Compile Include="Execution\ProcessingContext\ImportProfilePictureContext.cs" />
-    <Compile Include="Execution\ProcessingContext\ITfsProcessingContext.cs" />
-    <Compile Include="Execution\ProcessingContext\ProcessingContextBase.cs" />
-    <Compile Include="Execution\ProcessingContext\ExportProfilePictureFromADContext.cs" />
-    <Compile Include="Execution\ProcessingContext\WorkItemUpdate.cs" />
-    <Compile Include="Execution\ProcessingContext\WorkItemUpdateAreasAsTagsContext.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Execution\ComponentContext\TeamProjectContext.cs" />
-    <Compile Include="Execution\ComponentContext\TfsQueryContext.cs" />
-    <Compile Include="Execution\ComponentContext\WorkItemStoreContext.cs" />
-    <Compile Include="Execution\MigrationContext\TestPlansAndSuitesMigrationContext.cs" />
-    <Compile Include="Execution\FieldMaps\RegexFieldMap.cs" />
-    <Compile Include="Execution\FieldMaps\TreeToTagFieldMap.cs" />
-    <Compile Include="Telemetry.cs" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="Ben.Demystifier" Version="0.1.6" />
     <PackageReference Include="CsvHelper" Version="16.0.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.ExtendedClient" Version="16.153.0">
       <IncludeAssets>all</IncludeAssets>
       <ExcludeAssets>none</ExcludeAssets>
-      <PrivateAssets>contentFiles;analyzers</PrivateAssets><!--Need to be able to flow up the build folder so that we can get some native dlls into the output folder-->
+      <PrivateAssets>contentFiles;analyzers</PrivateAssets>
+      <!--Need to be able to flow up the build folder so that we can get some native dlls into the output folder-->
     </PackageReference>
+
   </ItemGroup>
 
   <ItemGroup>

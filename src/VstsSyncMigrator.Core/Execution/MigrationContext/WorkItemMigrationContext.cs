@@ -97,13 +97,6 @@ namespace VstsSyncMigrator.Engine
             //Validation: make sure that the ReflectedWorkItemId field name specified in the config exists in the target process, preferably on each work item type.
             PopulateIgnoreList();
 
-<<<<<<< HEAD
-            //VssClientCredentials adoCreds = new VssClientCredentials();
-
-            // Retrieve an instance of WorkItemTrackingHttpClient from the TargetCollection
-            // to avoid unnecessary sign in prompt
-            _witClient = me.Target.Collection.GetClient<WorkItemTrackingHttpClient>();
-=======
             var stopwatch = Stopwatch.StartNew();
             //////////////////////////////////////////////////
             string sourceQuery =
@@ -234,7 +227,6 @@ namespace VstsSyncMigrator.Engine
             if (_config.UpdateCreatedDate) { newwit.Fields["System.CreatedDate"].Value = currentRevisionWorkItem.ToWorkItem().Revisions[0].Fields["System.CreatedDate"].Value; }
             return newwit.AsWorkItemData();
         }
->>>>>>> fb9604e8aa7014a1e2fd5597568e0adc02154798
 
         [Obsolete("Replaced be TfsWorkItemMigrationClient.FilterExistingWorkItems ", true)]
         private List<WorkItemData> FilterByTarget(List<WorkItemData> sourceWorkItems)
