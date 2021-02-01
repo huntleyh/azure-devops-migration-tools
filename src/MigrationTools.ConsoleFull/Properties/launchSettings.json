@@ -1,0 +1,20 @@
+{
+  "profiles": {
+    "execute": {
+      "commandName": "Project",
+      "commandLineArgs": "execute -c configuration.json"
+    },
+    "init": {
+      "commandName": "Project",
+      "commandLineArgs": "init --options Full"
+    },
+    "execute2": {
+      "commandName": "Project",
+      "commandLineArgs": "execute -c configuration2.json"
+    },
+    "init2": {
+      "commandName": "Project",
+      "commandLineArgs": "init -c configuration2.json --options Fullv2"
+    }
+  }
+}
