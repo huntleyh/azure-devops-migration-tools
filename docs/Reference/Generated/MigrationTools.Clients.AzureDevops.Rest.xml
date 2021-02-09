@@ -6,7 +6,7 @@
     <members>
         <member name="M:MigrationTools.Endpoints.AzureDevOpsEndpoint.GetHttpClient``1">
             <summary>
-            Create a new instance of HttpClient including Heades
+            Create a new instance of HttpClient including Headers
             </summary>
             <returns>HttpClient</returns>
         </member>
@@ -30,6 +30,14 @@
             <typeparam name="DefinitionType"></typeparam>
             <param name="definitionsToBeMigrated"></param>
             <returns>List of Mappings</returns>
+        </member>
+        <member name="M:MigrationTools.Endpoints.AzureDevOpsEndpoint.CreateRepositoryImportRequestsAsync(System.Collections.Generic.IEnumerable{MigrationTools.DataContracts.Pipelines.GitRepository},System.String)">
+            <summary>
+            
+            </summary>
+            <param name="reposToBeImported"></param>
+            <param name="sourcePAT"></param>
+            <returns></returns>
         </member>
         <member name="T:MigrationTools.Processors.AzureDevOpsPipelineProcessor">
             <summary>
@@ -89,6 +97,11 @@
             Migrate Service Connections **secrets need to be entered manually**
             </summary>
             <default>true</default>
+        </member>
+        <member name="P:MigrationTools.Processors.AzureDevOpsPipelineProcessorOptions.MigrateGitRepositories">
+            <summary>
+            Migrate git repositories
+            </summary>
         </member>
         <member name="P:MigrationTools.Processors.AzureDevOpsPipelineProcessorOptions.BuildPipelines">
             <summary>

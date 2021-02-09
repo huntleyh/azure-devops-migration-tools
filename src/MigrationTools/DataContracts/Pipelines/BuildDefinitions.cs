@@ -10,6 +10,7 @@ namespace MigrationTools.DataContracts.Pipelines
 {
     [ApiPath("build/definitions")]
     [ApiName("Build Piplines")]
+    [ApiVersion("6.1-preview.7")]
     public partial class BuildDefinition : RestApiDefinition
     {
         public ExpandoObject[] Options { get; set; }
@@ -76,6 +77,7 @@ namespace MigrationTools.DataContracts.Pipelines
             Repository.Id = null;
 
             //Remove secure files
+            if(Process != null && Process.Phases != null)
             Process.Phases.ForEach(p => p.Steps.ForEach(s =>
             {
                 var secureFiles = s.Inputs.Where(i => i.Key == "secureFile");
@@ -147,7 +149,7 @@ namespace MigrationTools.DataContracts.Pipelines
 
     public partial class Option
     {
-        public bool Enabled { get; set; }
+        public bool? Enabled { get; set; }
 
         public Definition Definition { get; set; }
 
@@ -175,6 +177,7 @@ namespace MigrationTools.DataContracts.Pipelines
         public Phase[] Phases { get; set; }
 
         public int Type { get; set; }
+        public string yamlFilename { get; set; }
     }
 
     public partial class Phase
@@ -196,11 +199,11 @@ namespace MigrationTools.DataContracts.Pipelines
     {
         public ProcessParameters Environment { get; set; }
 
-        public bool Enabled { get; set; }
+        public bool? Enabled { get; set; }
 
-        public bool ContinueOnError { get; set; }
+        public bool? ContinueOnError { get; set; }
 
-        public bool AlwaysRun { get; set; }
+        public bool? AlwaysRun { get; set; }
 
         public string DisplayName { get; set; }
 
@@ -232,7 +235,7 @@ namespace MigrationTools.DataContracts.Pipelines
     {
         public ExecutionOptions ExecutionOptions { get; set; }
 
-        public bool AllowScriptsAuthAccessOption { get; set; }
+        public bool? AllowScriptsAuthAccessOption { get; set; }
 
         public int Type { get; set; }
     }
@@ -298,9 +301,9 @@ namespace MigrationTools.DataContracts.Pipelines
 
         public string DefaultBranch { get; set; }
 
-        public bool Clean { get; set; }
+        public bool? Clean { get; set; }
 
-        public bool CheckoutSubmodules { get; set; }
+        public bool? CheckoutSubmodules { get; set; }
     }
 
     public partial class Properties
@@ -311,13 +314,13 @@ namespace MigrationTools.DataContracts.Pipelines
 
         public string LabelSourcesFormat { get; set; }
 
-        public bool ReportBuildStatus { get; set; }
+        public bool? ReportBuildStatus { get; set; }
 
-        public bool GitLfsSupport { get; set; }
+        public bool? GitLfsSupport { get; set; }
 
-        public bool SkipSyncSource { get; set; }
+        public bool? SkipSyncSource { get; set; }
 
-        public bool CheckoutNestedSubmodules { get; set; }
+        public bool? CheckoutNestedSubmodules { get; set; }
 
         public long FetchDepth { get; set; }
     }
@@ -334,9 +337,9 @@ namespace MigrationTools.DataContracts.Pipelines
 
         public long MinimumToKeep { get; set; }
 
-        public bool DeleteBuildRecord { get; set; }
+        public bool? DeleteBuildRecord { get; set; }
 
-        public bool DeleteTestResults { get; set; }
+        public bool? DeleteTestResults { get; set; }
     }
 
     public partial class Trigger
@@ -345,7 +348,7 @@ namespace MigrationTools.DataContracts.Pipelines
 
         public object[] PathFilters { get; set; }
 
-        public bool BatchChanges { get; set; }
+        public bool? BatchChanges { get; set; }
 
         public long MaxConcurrentBuildsPerBranch { get; set; }
 
@@ -361,8 +364,8 @@ namespace MigrationTools.DataContracts.Pipelines
 
     public partial class SystemDebug
     {
-        public bool Value { get; set; }
+        public bool? Value { get; set; }
 
-        public bool AllowOverride { get; set; }
+        public bool? AllowOverride { get; set; }
     }
 }

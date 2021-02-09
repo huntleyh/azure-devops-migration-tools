@@ -37,6 +37,13 @@ namespace MigrationTools.Processors
         public bool MigrateServiceConnections { get; set; }
 
         /// <summary>
+        /// Migrate git repositories
+        /// </summary>
+        public bool MigrateGitRepositories { get; set; }
+
+        public string GitImportServiceConnectionName { get; set; }
+
+        /// <summary>
         /// List of Build Pipelines to process. If this is `null` then all Build Pipelines will be processed. **Not implemented yet**
         /// </summary>
         public List<string> BuildPipelines { get; set; }
@@ -55,6 +62,7 @@ namespace MigrationTools.Processors
 
         public override void SetDefaults()
         {
+            MigrateGitRepositories = true;
             MigrateBuildPipelines = true;
             MigrateReleasePipelines = true;
             MigrateTaskGroups = true;

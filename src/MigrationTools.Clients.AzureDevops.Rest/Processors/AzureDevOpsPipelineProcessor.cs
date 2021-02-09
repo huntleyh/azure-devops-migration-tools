@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+//using Microsoft.TeamFoundation.Build.WebApi;
 using MigrationTools.DataContracts;
 using MigrationTools.DataContracts.Pipelines;
 using MigrationTools.Endpoints;
@@ -17,6 +21,10 @@ namespace MigrationTools.Processors
     public partial class AzureDevOpsPipelineProcessor : Processor
     {
         private AzureDevOpsPipelineProcessorOptions _Options;
+        private Dictionary<string, string> _serviceConnectionMap;
+        private Dictionary<string, string> _taskGroupMap;
+        private Dictionary<string, string> _variableGroupMap;
+        private IEnumerable<Mapping> _gitRepoMap;
 
         public AzureDevOpsPipelineProcessor(
                     ProcessorEnricherContainer processorEnrichers,
@@ -72,9 +80,15 @@ namespace MigrationTools.Processors
         private async System.Threading.Tasks.Task MigratePipelinesAsync()
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
+            IEnumerable<Mapping<GitRepository>> gitRepositoryMappings = null;
             IEnumerable<Mapping> serviceConnectionMappings = null;
             IEnumerable<Mapping> taskGroupMappings = null;
             IEnumerable<Mapping> variableGroupMappings = null;
+
+            if (_Options.MigrateGitRepositories)
+            {
+                gitRepositoryMappings = await CreateGitRepositories();
+            }
             if (_Options.MigrateServiceConnections)
             {
                 serviceConnectionMappings = await CreateServiceConnectionsAsync();
@@ -89,15 +103,54 @@ namespace MigrationTools.Processors
             }
             if (_Options.MigrateBuildPipelines)
             {
-                await CreateBuildPipelinesAsync(taskGroupMappings, variableGroupMappings);
+                await CreateBuildPipelinesAsync(taskGroupMappings, variableGroupMappings, gitRepositoryMappings);
             }
-
             if (_Options.MigrateReleasePipelines)
             {
                 await CreateReleasePipelinesAsync(taskGroupMappings, variableGroupMappings);
             }
             stopwatch.Stop();
             Log.LogDebug("DONE in {Elapsed} ", stopwatch.Elapsed.ToString("c"));
+        }
+
+        private async Task<IEnumerable<Mapping<GitRepository>>> CreateGitRepositories()
+        {
+            Log.LogInformation($"Processing Service Connections..");
+
+            var sourceDefinitions = await Source.GetApiDefinitionsAsync<GitRepository>();
+            var targetDefinitions = await Target.GetApiDefinitionsAsync<GitRepository>();
+
+            var mappings = await Target.CreateRepositoryImportRequestsAsync(FilterOutExistingDefinitions(sourceDefinitions, targetDefinitions), Source.Options.AccessToken);
+            mappings.AddRange(FindExistingMappings(sourceDefinitions, targetDefinitions, mappings));
+            return mappings;
+        }
+
+        private IEnumerable<Mapping<T>> FindExistingMappings<T>(IEnumerable<T> sourceDefinitions, IEnumerable<T> targetDefinitions, List<Mapping<T>> mappings)
+             where T : RestApiDefinition, new()
+        {
+            // This is not safe, because the target project can have a taskgroup with the same name but with different content
+            // To make this save we must add a local storage option for the mappings (sid, tid)
+            var alreadyMigratedMappings = new List<Mapping<T>>();
+            var alreadyMigratedDefintions = targetDefinitions.Where(t => mappings.Any(m => m.TargetId == t.Id) == false).ToList();
+            foreach (var item in alreadyMigratedDefintions)
+            {
+                var source = sourceDefinitions.FirstOrDefault(d => d.Name == item.Name);
+                if (source == null)
+                {
+                    Log.LogInformation("The {DefinitionType} {DefinitionName}({DefinitionId}) doesn't exist in the source collection.", typeof(T).Name, item.Name, item.Id);
+                }
+                else
+                {
+                    alreadyMigratedMappings.Add(new()
+                    {
+                        SourceId = source.Id,
+                        TargetId = item.Id,
+                        Name = item.Name,
+                        Ref = item
+                    });
+                }
+            }
+            return alreadyMigratedMappings;
         }
 
         /// <summary>
@@ -152,7 +205,7 @@ namespace MigrationTools.Processors
             return objectsToMigrate;
         }
 
-        private async Task<IEnumerable<Mapping>> CreateBuildPipelinesAsync(IEnumerable<Mapping> TaskGroupMapping = null, IEnumerable<Mapping> VariableGroupMapping = null)
+        private async Task<IEnumerable<Mapping>> CreateBuildPipelinesAsync(IEnumerable<Mapping> TaskGroupMapping = null, IEnumerable<Mapping> VariableGroupMapping = null, IEnumerable<Mapping<GitRepository>> gitRepoMapping = null)
         {
             Log.LogInformation("Processing Build Pipelines..");
 
@@ -161,10 +214,40 @@ namespace MigrationTools.Processors
             var definitionsToBeMigrated = FilterOutExistingDefinitions(sourceDefinitions, targetDefinitions);
 
             definitionsToBeMigrated = FilterAwayIfAnyMapsAreMissing(definitionsToBeMigrated, TaskGroupMapping, VariableGroupMapping);
+
+            var agentQueueMappings = await CreateAgentQueueMappingsAsync<TaskAgentQueue>();
+            var agentPoolMappings = await CreateAgentPoolMappingsAsync<TaskAgentPool>();
+
             // Replace taskgroup and variablegroup sIds with tIds
             foreach (var definitionToBeMigrated in definitionsToBeMigrated)
             {
-                if (TaskGroupMapping is not null)
+                if(agentQueueMappings != null && definitionToBeMigrated.Queue != null)
+                {
+                    var mapping = agentQueueMappings.FirstOrDefault(d => string.Equals(d.SourceId, definitionToBeMigrated.Queue.Id.ToString(), StringComparison.CurrentCultureIgnoreCase));
+                    if (mapping == null)
+                    {
+                        Log.LogWarning("Can't find agent queue {MissingQueueId} in the target collection.", definitionToBeMigrated.Queue.Id);
+                    }
+                    else
+                    {
+                        definitionToBeMigrated.Queue.Id = long.Parse(mapping.TargetId);
+                    }
+
+                    if (definitionToBeMigrated.Queue.Pool != null)
+                    {
+                        mapping = agentPoolMappings.FirstOrDefault(d => string.Equals(d.SourceId, definitionToBeMigrated.Queue.Pool.Id.ToString(), StringComparison.CurrentCultureIgnoreCase));
+                        if (mapping == null)
+                        {
+                            Log.LogWarning("Can't find agent pool {MissingPoolId} in the target collection.", definitionToBeMigrated.Queue.Pool.Id);
+                        }
+                        else
+                        {
+                            definitionToBeMigrated.Queue.Pool.Id = long.Parse(mapping.TargetId);
+                        }
+                    }
+                }
+
+                if (TaskGroupMapping is not null && definitionToBeMigrated.Process.Phases is not null)
                 {
                     foreach (var phase in definitionToBeMigrated.Process.Phases)
                     {
@@ -187,11 +270,11 @@ namespace MigrationTools.Processors
                     }
                 }
 
-                if (VariableGroupMapping is not null)
+                if (VariableGroupMapping is not null && definitionToBeMigrated.VariableGroups is not null)
                 {
                     foreach (var variableGroup in definitionToBeMigrated.VariableGroups)
                     {
-                        if (variableGroup != null)
+                        if (variableGroup == null)
                         {
                             continue;
                         }
@@ -207,13 +290,49 @@ namespace MigrationTools.Processors
                     }
                 }
 
+                if (gitRepoMapping is not null && definitionToBeMigrated.Repository is not null)
+                {
+                    var repo = gitRepoMapping.FirstOrDefault(x => x.Name.Equals(definitionToBeMigrated.Repository.Name, StringComparison.CurrentCultureIgnoreCase));
+                    if (repo != null)
+                    {
+                        definitionToBeMigrated.Repository.Id = repo.TargetId;
+                        definitionToBeMigrated.Repository.Url = new Uri(repo.Ref.remoteUrl);
+                        //definitionToBeMigrated.Repository.Properties.cloneUrl = repo.remoteUrl;
+                    }
+                    else
+                    {
+                        Log.LogWarning("Can't find repository {MissingRepoId} in the target project.", definitionToBeMigrated.Repository.Name);
+                    }
+                }
             }
             var mappings = await Target.CreateApiDefinitionsAsync<BuildDefinition>(definitionsToBeMigrated.ToList());
             mappings.AddRange(FindExistingMappings(sourceDefinitions, targetDefinitions, mappings));
             return mappings;
         }
 
-        private async Task<IEnumerable<Mapping>> CreatePoolMappingsAsync<DefinitionType>()
+        private async Task<IEnumerable<Mapping>> CreateAgentQueueMappingsAsync<DefinitionType>()
+            where DefinitionType : RestApiDefinition, new()
+        {
+            var sourceQueues = await Source.GetApiDefinitionsAsync<DefinitionType>();
+            var targetQueues = await Target.GetApiDefinitionsAsync<DefinitionType>();
+            var mappings = new List<Mapping>();
+            foreach (var sourceQueue in sourceQueues)
+            {
+                var targetQueue = targetQueues.FirstOrDefault(t => t.Name == sourceQueue.Name);
+                if (targetQueue is not null)
+                {
+                    mappings.Add(new()
+                    {
+                        SourceId = sourceQueue.Id,
+                        TargetId = targetQueue.Id,
+                        Name = targetQueue.Name
+                    });
+                }
+            }
+            return mappings;
+        }
+
+        private async Task<IEnumerable<Mapping>> CreateAgentPoolMappingsAsync<DefinitionType>()
             where DefinitionType : RestApiDefinition, new()
         {
             var sourcePools = await Source.GetApiDefinitionsAsync<DefinitionType>();
@@ -255,8 +374,8 @@ namespace MigrationTools.Processors
             var sourceDefinitions = await Source.GetApiDefinitionsAsync<ReleaseDefinition>();
             var targetDefinitions = await Target.GetApiDefinitionsAsync<ReleaseDefinition>();
 
-            var agentPoolMappings = await CreatePoolMappingsAsync<TaskAgentPool>();
-            var deploymentGroupMappings = await CreatePoolMappingsAsync<DeploymentGroup>();
+            var agentPoolMappings = await CreateAgentQueueMappingsAsync<TaskAgentQueue>();
+            var deploymentGroupMappings = await CreateAgentQueueMappingsAsync<DeploymentGroup>();
 
             var definitionsToBeMigrated = FilterOutExistingDefinitions(sourceDefinitions, targetDefinitions);
             if (_Options.ReleasePipelines is not null)
@@ -348,7 +467,7 @@ namespace MigrationTools.Processors
                 {
                     foreach (var WorkflowTask in deployPhase.WorkflowTasks)
                     {
-                        if (WorkflowTask.DefinitionType.ToLower() != "metaTask".ToLower())
+                        if (WorkflowTask.DefinitionType == null || WorkflowTask.DefinitionType.ToLower() != "metaTask".ToLower())
                         {
                             continue;
                         }

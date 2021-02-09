@@ -21,4 +21,22 @@ namespace MigrationTools.DataContracts
 
         public string Name { get; }
     }
+
+    public class ApiVersionAttribute : Attribute
+    {
+        public ApiVersionAttribute(string version)
+        {
+            this.Version = version;
+        }
+
+        public string Version { get; }
+    }
+    public class ApiOrgLevelAttribute : Attribute
+    {
+        public bool IsOrgLevel { get; set; }
+        public ApiOrgLevelAttribute(bool orgLevel = true)
+        {
+            IsOrgLevel = orgLevel;
+        }
+    }
 }

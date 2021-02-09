@@ -112,6 +112,15 @@
         <member name="M:MigrationTools._EngineV1.Configuration.Processing.FixGitCommitLinksConfig.IsProcessorCompatible(System.Collections.Generic.IReadOnlyList{MigrationTools._EngineV1.Configuration.IProcessorConfig})">
             <inheritdoc />
         </member>
+        <member name="P:MigrationTools._EngineV1.Configuration.Processing.GitRepositoryMigrationConfig.Enabled">
+            <inheritdoc />
+        </member>
+        <member name="P:MigrationTools._EngineV1.Configuration.Processing.GitRepositoryMigrationConfig.Processor">
+            <inheritdoc />
+        </member>
+        <member name="M:MigrationTools._EngineV1.Configuration.Processing.GitRepositoryMigrationConfig.IsProcessorCompatible(System.Collections.Generic.IReadOnlyList{MigrationTools._EngineV1.Configuration.IProcessorConfig})">
+            <inheritdoc />
+        </member>
         <member name="P:MigrationTools._EngineV1.Configuration.Processing.ImportProfilePictureConfig.Enabled">
             <inheritdoc />
         </member>

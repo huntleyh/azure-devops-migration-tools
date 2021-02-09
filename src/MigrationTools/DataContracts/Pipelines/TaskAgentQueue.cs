@@ -1,9 +1,9 @@
 ﻿namespace MigrationTools.DataContracts.Pipelines
 {
-    [ApiPath("distributedtask/pools")]
-    [ApiName("Agent Pools")]
-    [ApiOrgLevel(true)]
-    public class TaskAgentPool : RestApiDefinition
+    [ApiPath("distributedtask/queues")]
+    [ApiName("Agent Queues")]
+    [ApiVersion("6.1-preview.1")]
+    public class TaskAgentQueue : RestApiDefinition
     {
         public override bool HasTaskGroups()
         {

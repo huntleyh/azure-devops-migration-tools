@@ -1,10 +1,12 @@
 ﻿namespace MigrationTools.DataContracts.Pipelines
 {
-    [ApiPath("distributedtask/pools")]
-    [ApiName("Agent Pools")]
-    [ApiOrgLevel(true)]
-    public class TaskAgentPool : RestApiDefinition
+    [ApiPath("git/repositories")]
+    [ApiName("Git Repositories")]
+    [ApiVersion("6.1-preview.1")]
+    public partial class GitRepository : RestApiDefinition
     {
+        public string remoteUrl { get; set; }
+        public string url { get; set; }
         public override bool HasTaskGroups()
         {
             return false;
@@ -17,7 +19,7 @@
 
         public override void ResetObject()
         {
-            //We are not migrating this, right now only using the names for mapping it over to target
+            return;
         }
     }
 }

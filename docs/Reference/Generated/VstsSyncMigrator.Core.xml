@@ -4,6 +4,11 @@
         <name>VstsSyncMigrator.Core</name>
     </assembly>
     <members>
+        <member name="F:VstsSyncMigrator.Engine.GitRepositoryMigrationContext._config">
+            <summary>
+            The processor configuration
+            </summary>
+        </member>
         <member name="M:VstsSyncMigrator.Engine.TestPlandsAndSuitesMigrationContext.ApplyConfigurations(Microsoft.TeamFoundation.TestManagement.Client.ITestSuiteEntry,Microsoft.TeamFoundation.TestManagement.Client.ITestSuiteEntry)">
             <summary>
             Apply configurations to a single test case entry on the target, by copying from the source
