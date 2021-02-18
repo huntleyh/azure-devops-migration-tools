@@ -419,28 +419,15 @@ namespace VstsSyncMigrator.Engine
                         });
                 }
             }
+            catch(Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            {
+                Log.LogError(ex, "Team Foundation Service Unavailable:");
+                DoRetry(ref retrys, retryLimit, sourceWorkItem, true);
+            }
             catch (WebException ex)
             {
                 Log.LogError(ex, "Some kind of internet pipe blockage");
-                if (retrys < retryLimit)
-                {
-                    TraceWriteLine(LogEventLevel.Warning, "WebException: Will retry in {retrys}s ",
-                        new Dictionary<string, object>() {
-                            {"retrys", retrys }
-                        });
-                    System.Threading.Thread.Sleep(new TimeSpan(0, 0, retrys));
-                    retrys++;
-                    TraceWriteLine(LogEventLevel.Warning, "RETRY {Retrys}/{RetryLimit} ",
-                        new Dictionary<string, object>() {
-                            {"Retrys", retrys },
-                            {"RetryLimit", retryLimit }
-                        });
-                    ProcessWorkItem(sourceWorkItem, retryLimit, retrys);
-                }
-                else
-                {
-                    TraceWriteLine(LogEventLevel.Error, "ERROR: Failed to create work item. Retry Limit reached ");
-                }
+                DoRetry(ref retrys, retryLimit, sourceWorkItem);
             }
             catch (Exception ex)
             {
@@ -465,6 +452,29 @@ namespace VstsSyncMigrator.Engine
 
             _current++;
             _count--;
+        }
+
+        private void DoRetry(ref int retrys, int retryLimit, WorkItemData sourceWorkItem, bool exponential = false)
+        {
+            if (retrys < retryLimit)
+            {
+                TraceWriteLine(LogEventLevel.Warning, "WebException: Will retry in {retrys}s ",
+                    new Dictionary<string, object>() {
+                            {"retrys", retrys }
+                    });
+                System.Threading.Thread.Sleep(new TimeSpan(0, 0, retrys));
+                retrys++;
+                TraceWriteLine(LogEventLevel.Warning, "RETRY {Retrys}/{RetryLimit} ",
+                    new Dictionary<string, object>() {
+                            {"Retrys", retrys },
+                            {"RetryLimit", retryLimit }
+                    });
+                ProcessWorkItem(sourceWorkItem, retryLimit, retrys);
+            }
+            else
+            {
+                TraceWriteLine(LogEventLevel.Error, "ERROR: Failed to create work item. Retry Limit reached ");
+            }
         }
 
         private void ProcessWorkItemAttachments(WorkItemData sourceWorkItem, WorkItemData targetWorkItem, bool save = true)

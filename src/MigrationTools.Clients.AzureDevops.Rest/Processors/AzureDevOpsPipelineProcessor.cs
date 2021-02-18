@@ -81,9 +81,12 @@ namespace MigrationTools.Processors
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             IEnumerable<Mapping<GitRepository>> gitRepositoryMappings = null;
+            IEnumerable<Mapping> buildDefinitionMapping = null;
             IEnumerable<Mapping> serviceConnectionMappings = null;
             IEnumerable<Mapping> taskGroupMappings = null;
             IEnumerable<Mapping> variableGroupMappings = null;
+
+            await Target.GetProjectGuid();
 
             if (_Options.MigrateGitRepositories)
             {
@@ -103,15 +106,16 @@ namespace MigrationTools.Processors
             }
             if (_Options.MigrateBuildPipelines)
             {
-                await CreateBuildPipelinesAsync(taskGroupMappings, variableGroupMappings, gitRepositoryMappings);
+                buildDefinitionMapping = await CreateBuildPipelinesAsync(taskGroupMappings, variableGroupMappings, gitRepositoryMappings);
             }
             if (_Options.MigrateReleasePipelines)
             {
-                await CreateReleasePipelinesAsync(taskGroupMappings, variableGroupMappings);
+                await CreateReleasePipelinesAsync(taskGroupMappings, variableGroupMappings, gitRepositoryMappings, buildDefinitionMapping);
             }
             stopwatch.Stop();
             Log.LogDebug("DONE in {Elapsed} ", stopwatch.Elapsed.ToString("c"));
         }
+
 
         private async Task<IEnumerable<Mapping<GitRepository>>> CreateGitRepositories()
         {
@@ -221,7 +225,7 @@ namespace MigrationTools.Processors
             // Replace taskgroup and variablegroup sIds with tIds
             foreach (var definitionToBeMigrated in definitionsToBeMigrated)
             {
-                if(agentQueueMappings != null && definitionToBeMigrated.Queue != null)
+                if (agentQueueMappings != null && definitionToBeMigrated.Queue != null)
                 {
                     var mapping = agentQueueMappings.FirstOrDefault(d => string.Equals(d.SourceId, definitionToBeMigrated.Queue.Id.ToString(), StringComparison.CurrentCultureIgnoreCase));
                     if (mapping == null)
@@ -367,7 +371,8 @@ namespace MigrationTools.Processors
             }
         }
 
-        private async Task<IEnumerable<Mapping>> CreateReleasePipelinesAsync(IEnumerable<Mapping> TaskGroupMapping = null, IEnumerable<Mapping> VariableGroupMapping = null)
+        private async Task<IEnumerable<Mapping>> CreateReleasePipelinesAsync(IEnumerable<Mapping> TaskGroupMapping = null, IEnumerable<Mapping> VariableGroupMapping = null,
+                                                                            IEnumerable<Mapping> gitRepoMapping = null, IEnumerable<Mapping> buildPipelinesMapping = null)
         {
             Log.LogInformation($"Processing Release Pipelines..");
 
@@ -392,6 +397,10 @@ namespace MigrationTools.Processors
 
                 UpdateTaskGroupId(definitionToBeMigrated, TaskGroupMapping);
 
+                UpdateRepositoryId(definitionToBeMigrated, gitRepoMapping);
+
+                UpdateBuildId(definitionToBeMigrated, buildPipelinesMapping);
+
                 if (VariableGroupMapping is not null)
                 {
                     UpdateVariableGroupId(definitionToBeMigrated.VariableGroups, VariableGroupMapping);
@@ -406,6 +415,70 @@ namespace MigrationTools.Processors
             var mappings = await Target.CreateApiDefinitionsAsync<ReleaseDefinition>(definitionsToBeMigrated);
             mappings.AddRange(FindExistingMappings(sourceDefinitions, targetDefinitions, mappings));
             return mappings;
+        }
+
+        private void UpdateBuildId(ReleaseDefinition definitionToBeMigrated, IEnumerable<Mapping> buildPipelinesMapping)
+        {
+            if (buildPipelinesMapping is null) return;
+
+            if (definitionToBeMigrated.Artifacts != null)
+            {
+                foreach (var artifact in definitionToBeMigrated.Artifacts)
+                {
+                    if (artifact.Type.Equals("Build", StringComparison.CurrentCultureIgnoreCase) &&
+                        artifact.DefinitionReference != null &&
+                        artifact.DefinitionReference.Definition != null)
+                    {
+                        var mapping = buildPipelinesMapping.FirstOrDefault(d => d.SourceId == artifact.DefinitionReference.Definition.Id.ToString());
+                        if (mapping == null)
+                        {
+                            Log.LogWarning("Can't find definition ID {Id} in the target collection.", artifact.DefinitionReference.Definition.Id);
+                        }
+                        else
+                        {
+                            if (artifact.DefinitionReference.Project != null)
+                            {
+                                artifact.DefinitionReference.Project.Id = Target.ProjectGuid;
+                                artifact.DefinitionReference.Project.Name = Target.Options.Project;
+                            }
+                            artifact.DefinitionReference.Definition.Id = mapping.TargetId;
+                            artifact.SourceId = string.Format("{0}:{1}", Target.ProjectGuid, mapping.TargetId);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void UpdateRepositoryId(ReleaseDefinition definitionToBeMigrated, IEnumerable<Mapping> gitRepoMapping)
+        {
+            if (gitRepoMapping is null) return;
+
+            if (definitionToBeMigrated.Artifacts != null)
+            {
+                foreach (var artifact in definitionToBeMigrated.Artifacts)
+                {
+                    if (artifact.Type.Equals("Git", StringComparison.CurrentCultureIgnoreCase) &&
+                        artifact.DefinitionReference != null &&
+                        artifact.DefinitionReference.Definition != null)
+                    {
+                        var mapping = gitRepoMapping.FirstOrDefault(d => d.SourceId == artifact.DefinitionReference.Definition.Id.ToString());
+                        if (mapping == null)
+                        {
+                            Log.LogWarning("Can't find definition ID {Id} in the target collection.", artifact.DefinitionReference.Definition.Id);
+                        }
+                        else
+                        {
+                            if (artifact.DefinitionReference.Project != null)
+                            {
+                                artifact.DefinitionReference.Project.Id = Target.ProjectGuid;
+                                artifact.DefinitionReference.Project.Name = Target.Options.Project;
+                            }
+                            artifact.DefinitionReference.Definition.Id = mapping.TargetId;
+                            artifact.SourceId = string.Format("{0}:{1}", Target.ProjectGuid, mapping.TargetId);
+                        }
+                    }
+                }
+            }
         }
 
         private IEnumerable<DefinitionType> FilterAwayIfAnyMapsAreMissing<DefinitionType>(

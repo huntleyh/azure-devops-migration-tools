@@ -20,6 +20,7 @@ namespace MigrationTools.Endpoints
     public class AzureDevOpsEndpoint : Endpoint<AzureDevOpsEndpointOptions>
     {
         public override int Count => 0;
+        public string ProjectGuid { get; set; }
 
         public AzureDevOpsEndpoint(EndpointEnricherContainer endpointEnrichers, ITelemetryLogger telemetry, ILogger<AzureDevOpsEndpoint> logger)
             : base(endpointEnrichers, telemetry, logger)
@@ -64,7 +65,7 @@ namespace MigrationTools.Endpoints
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", "", Options.AccessToken))));
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            
+
             return client;
         }
 
@@ -116,6 +117,22 @@ namespace MigrationTools.Endpoints
             return builder;
         }
 
+        internal async System.Threading.Tasks.Task GetProjectGuid()
+        {
+            HttpClient client = GetHttpClient<DataContracts.Pipelines.TeamProject>();
+            var httpResponse = await client.GetAsync($"{this.Options.Project}");
+
+            if (httpResponse != null)
+            {
+                var project = await httpResponse.Content.ReadAsAsync<DataContracts.Pipelines.TeamProject>();
+
+                if(project != null && httpResponse.IsSuccessStatusCode)
+                {
+                    this.ProjectGuid = project.Id;
+                }    
+            }
+        }
+
         /// <summary>
         /// Generic Method to get API Definitions (Taskgroups, Variablegroups, Build- or Release Pipelines)
         /// </summary>
@@ -133,7 +150,7 @@ namespace MigrationTools.Endpoints
             {
                 var definitions = await httpResponse.Content.ReadAsAsync<RestResultDefinition<DefinitionType>>();
 
-                if(typeof(DefinitionType) == typeof(TaskAgentQueue))
+                if (typeof(DefinitionType) == typeof(TaskAgentQueue))
                 {
                     foreach (RestApiDefinition definition in definitions.Value)
                     {
@@ -290,7 +307,7 @@ namespace MigrationTools.Endpoints
                 var result = await importRequestsClient.GetAsync($"{importRequests[index].repository.Id}/importRequests/{importRequests[index].importRequestId}");
 
                 var latest = await result.Content.ReadAsAsync<ImportRequest>();
-                if(completedStatuses.Contains(latest.status))
+                if (completedStatuses.Contains(latest.status))
                 {
                     if (latest.status.Equals("completed", StringComparison.CurrentCultureIgnoreCase))
                     {

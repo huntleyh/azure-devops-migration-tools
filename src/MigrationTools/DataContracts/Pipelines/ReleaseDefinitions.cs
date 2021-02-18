@@ -53,11 +53,11 @@ namespace MigrationTools.DataContracts.Pipelines
 
             Links = null;
 
-            Artifacts = null;
+            //Artifacts = null;
             Url = null;
             Links = null;
             Id = "0";
-            Triggers = null;
+            //Triggers = null;
 
             PipelineProcess = null;
 
@@ -108,6 +108,15 @@ namespace MigrationTools.DataContracts.Pipelines
         public ArtifactSourceDefinitionUrl Definition { get; set; }
 
         public ArtifactSourceDefinitionUrl Project { get; set; }
+        public ArtifactSourceDefinitionUrl branches { get; set; }
+        public ArtifactSourceDefinitionUrl checkoutNestedSubmodules { get; set; }
+        public ArtifactSourceDefinitionUrl checkoutSubmodules { get; set; }
+        public ArtifactSourceDefinitionUrl fetchDepth { get; set; }
+        public ArtifactSourceDefinitionUrl gitLfsSupport { get; set; }
+        public ArtifactSourceDefinitionUrl definitions { get; set; }
+        public ArtifactSourceDefinitionUrl IsMultiDefinitionType { get; set; }
+        public ArtifactSourceDefinitionUrl repository { get; set; }
+        //public ArtifactSourceDefinitionUrl artifactSourceDefinitionUrl { get; set; }        
     }
 
     public partial class ArtifactSourceDefinitionUrl
@@ -257,7 +266,7 @@ namespace MigrationTools.DataContracts.Pipelines
     public partial class DeploymentInput
     {
         public ParallelExecution ParallelExecution { get; set; }
-
+        public AgentSpecification agentSpecification { get; set; }
         public string[] Tags { get; set; }
         public int QueueId { get; set; }
         public bool SkipArtifactsDownload { get; set; }
@@ -281,7 +290,12 @@ namespace MigrationTools.DataContracts.Pipelines
     {
         public object[] DownloadInputs { get; set; }
     }
-
+    public partial class AgentSpecification
+    {
+        public string identifier { get; set; }
+        public string MetadataDocument { get; set; }
+        public string Url { get; set; }
+    }
     public partial class ParallelExecution
     {
         public string ParallelExecutionType { get; set; }
@@ -397,9 +411,25 @@ namespace MigrationTools.DataContracts.Pipelines
 
         public long Id { get; set; }
 
+        public Approver Approver { get; set; }
+
         public void ResetObject()
         {
             Id = 0;
+        }
+    }
+    public partial class Approver
+    {
+        public string displayName { get; set; }
+
+        public string id { get; set; }
+
+        public string uniqueName { get; set; }
+
+        public string descriptor { get; set; }
+        public void ResetObject()
+        {
+            id ="";
         }
     }
 
