@@ -405,16 +405,47 @@ namespace MigrationTools.Processors
                 {
                     UpdateVariableGroupId(definitionToBeMigrated.VariableGroups, VariableGroupMapping);
 
-                    foreach (var environment in definitionToBeMigrated.Environments)
+                    //foreach (var environment in definitionToBeMigrated.Environments)
+                    //{
+                    //    UpdateVariableGroupId(environment.VariableGroups, VariableGroupMapping);
+                    //}
+                }
+                foreach (var environment in definitionToBeMigrated.Environments)
+                {
+                    UpdateAutomatedPrePostApprovals(environment.PreDeployApprovals);
+                    UpdateAutomatedPrePostApprovals(environment.PostDeployApprovals);
+
+                    if (VariableGroupMapping is not null)
                     {
                         UpdateVariableGroupId(environment.VariableGroups, VariableGroupMapping);
                     }
                 }
+                
             }
 
             var mappings = await Target.CreateApiDefinitionsAsync<ReleaseDefinition>(definitionsToBeMigrated);
             mappings.AddRange(FindExistingMappings(sourceDefinitions, targetDefinitions, mappings));
             return mappings;
+        }
+
+        private void UpdateAutomatedPrePostApprovals(DeployApprovals deployApprovals)
+        {
+            if(deployApprovals != null && deployApprovals.Approvals != null)
+            {
+                bool automatedApproval = false;
+                foreach(var approval in deployApprovals.Approvals)
+                {
+                    if(approval.IsAutomated && automatedApproval == false)
+                    {
+                        automatedApproval = true;
+                    }
+                    else if (approval.IsAutomated && automatedApproval == true)
+                    {
+                        // We can have only a single automated approval so we set every other approval as false
+                        approval.IsAutomated = false;
+                    }
+                }
+            }
         }
 
         private void UpdateBuildId(ReleaseDefinition definitionToBeMigrated, IEnumerable<Mapping> buildPipelinesMapping)

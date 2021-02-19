@@ -405,7 +405,7 @@ namespace MigrationTools.DataContracts.Pipelines
     {
         public long Rank { get; set; }
 
-        public bool IsAutomated { get; } = true;
+        public bool IsAutomated { get; set; }
 
         public bool IsNotificationOn { get; set; }
 
