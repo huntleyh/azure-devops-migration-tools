@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using Microsoft.TeamFoundation.WorkItemTracking.Proxy;
 using Microsoft.TeamFoundation.WorkItemTracking.WebApi;
+using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi.Patch.Json;
 using MigrationTools;
 using MigrationTools._EngineV1.Clients;
@@ -399,7 +400,18 @@ namespace VstsSyncMigrator.Engine
                     ///////////////////////////////////////////////////////
                     if (targetWorkItem != null && targetWorkItem.ToWorkItem().IsDirty)
                     {
-                        targetWorkItem.SaveToAzureDevOps();
+                        try
+                        {
+                            targetWorkItem.SaveToAzureDevOps();
+                        }
+                        catch(ValidationException ve)
+                        {
+                            TraceWriteLine(LogEventLevel.Error, "Unable to save {sourceWorkItemTypeName}/{sourceWorkItemId}." + Environment.NewLine + ve.ToString(),
+                                new Dictionary<string, object>() {
+                                    {"sourceWorkItemTypeName", sourceWorkItem.Type },
+                                    {"sourceWorkItemId", sourceWorkItem.Id }
+                                });
+                        }
                     }
                     if (targetWorkItem != null)
                     {
@@ -437,7 +449,9 @@ namespace VstsSyncMigrator.Engine
             }
             witstopwatch.Stop();
             _elapsedms += witstopwatch.ElapsedMilliseconds;
-            processWorkItemMetrics.Add("ElapsedTimeMS", _elapsedms);
+            Func<double, double, double> updater = (oldVal, newVal) => { return newVal; };
+
+            processWorkItemMetrics.AddOrUpdate("ElapsedTimeMS", _elapsedms, updater);
 
             var average = new TimeSpan(0, 0, 0, 0, (int)(_elapsedms / _current));
             var remaining = new TimeSpan(0, 0, 0, 0, (int)(average.TotalMilliseconds * _count));
@@ -528,7 +542,7 @@ namespace VstsSyncMigrator.Engine
                 {
                     var data = revisionsToMigrate.Select(rev =>
                     {
-                        var revWi = sourceWorkItem.GetRevision(rev.Number);
+                        var revWi = sourceWorkItem.GetRevisionAsync(rev.Number, _config.WorkItemCreateRetryLimit);
 
                         return new
                         {
@@ -556,7 +570,7 @@ namespace VstsSyncMigrator.Engine
 
                 foreach (var revision in revisionsToMigrate)
                 {
-                    var currentRevisionWorkItem = sourceWorkItem.GetRevision(revision.Number);
+                    var currentRevisionWorkItem = sourceWorkItem.GetRevisionAsync(revision.Number, _config.WorkItemCreateRetryLimit);
 
                     TraceWriteLine(LogEventLevel.Information, " Processing Revision [{RevisionNumber}]",
                         new Dictionary<string, object>() {

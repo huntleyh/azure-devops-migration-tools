@@ -8,6 +8,7 @@ namespace MigrationTools._EngineV1.Configuration.Processing
         public bool Enabled { get; set; }
         public string OnlyElementsWithTag { get; set; }
         public string TestPlanQueryBit { get; set; }
+        public bool Incremental { get; set; }
 
         public string Processor
         {
@@ -29,6 +30,7 @@ namespace MigrationTools._EngineV1.Configuration.Processing
 
         public TestPlansAndSuitesMigrationConfig()
         {
+            Incremental = false;
         }
     }
 }

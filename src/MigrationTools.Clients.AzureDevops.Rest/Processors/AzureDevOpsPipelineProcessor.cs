@@ -255,20 +255,23 @@ namespace MigrationTools.Processors
                 {
                     foreach (var phase in definitionToBeMigrated.Process.Phases)
                     {
-                        foreach (var step in phase.Steps)
+                        if (phase.Steps != null)
                         {
-                            if (step.Task.DefinitionType.ToLower() != "metaTask".ToLower())
+                            foreach (var step in phase.Steps)
                             {
-                                continue;
-                            }
-                            var mapping = TaskGroupMapping.FirstOrDefault(d => d.SourceId == step.Task.Id);
-                            if (mapping == null)
-                            {
-                                Log.LogWarning("Can't find taskgroup {MissingTaskGroupId} in the target collection.", step.Task.Id);
-                            }
-                            else
-                            {
-                                step.Task.Id = mapping.TargetId;
+                                if (step.Task.DefinitionType.ToLower() != "metaTask".ToLower())
+                                {
+                                    continue;
+                                }
+                                var mapping = TaskGroupMapping.FirstOrDefault(d => d.SourceId == step.Task.Id);
+                                if (mapping == null)
+                                {
+                                    Log.LogWarning("Can't find taskgroup {MissingTaskGroupId} in the target collection.", step.Task.Id);
+                                }
+                                else
+                                {
+                                    step.Task.Id = mapping.TargetId;
+                                }
                             }
                         }
                     }

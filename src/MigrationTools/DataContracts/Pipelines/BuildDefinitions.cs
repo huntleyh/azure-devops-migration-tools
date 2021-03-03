@@ -77,22 +77,27 @@ namespace MigrationTools.DataContracts.Pipelines
             Repository.Id = null;
 
             //Remove secure files
-            if(Process != null && Process.Phases != null)
-            Process.Phases.ForEach(p => p.Steps.ForEach(s =>
-            {
-                var secureFiles = s.Inputs.Where(i => i.Key == "secureFile");
-                for (int i = 0; i < secureFiles.Count(); i++)
+            if (Process != null && Process.Phases != null)
+                Process.Phases.ForEach(p =>
                 {
-                    var secureFile = secureFiles.ElementAt(i);
-                    ((ICollection<KeyValuePair<string, object>>)s.Inputs).Remove(secureFile);
-                }
-            }
-            ));
+                    if (p.Steps != null)
+                    {
+                        p.Steps.ForEach(s =>
+                        {
+                            var secureFiles = s.Inputs.Where(i => i.Key == "secureFile");
+                            for (int i = 0; i < secureFiles.Count(); i++)
+                            {
+                                var secureFile = secureFiles.ElementAt(i);
+                                ((ICollection<KeyValuePair<string, object>>)s.Inputs).Remove(secureFile);
+                            }
+                        });
+                    }
+                });
         }
 
         public override bool HasTaskGroups()
         {
-            return Process.Phases.Any(p => p.Steps.Any(s => s.Task.DefinitionType.ToString() == "metaTask"));  
+            return Process.Phases.Any(p => p.Steps.Any(s => s.Task.DefinitionType.ToString() == "metaTask"));
         }
 
         public override bool HasVariableGroups()

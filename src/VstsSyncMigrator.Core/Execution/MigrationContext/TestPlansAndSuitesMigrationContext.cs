@@ -730,7 +730,7 @@ namespace VstsSyncMigrator.Engine
                 : $"{sourcePlan.Name}";
             InnerLog(sourcePlan, $"Process Plan {newPlanName}", 0, true);
             var targetPlan = FindTestPlan(_targetTestStore, newPlanName);
-            if (targetPlan != null && TargetPlanContansTag(targetPlan.Id))
+            if (targetPlan != null && (_config.Incremental == false && TargetPlanContansTag(targetPlan.Id)))
             {
                 return;
             }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Web.Http.Controllers;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using MigrationTools._EngineV1.Configuration;
 using MigrationTools._EngineV1.DataContracts;
@@ -43,18 +45,19 @@ namespace MigrationTools
             return (TfsTeamProjectConfig)context;
         }
 
-        public static WorkItemData AsWorkItemData(this WorkItem context, Dictionary<string, object> fieldsOfRevision = null)
+        public static WorkItemData AsWorkItemData(this WorkItem context, Dictionary<string, object> fieldsOfRevision = null, int retryLimit = 10)
         {
             var internalWorkItem = new WorkItemData
             {
                 internalObject = context
             };
 
-            internalWorkItem.RefreshWorkItem(fieldsOfRevision);
+            CallWithRetry(() => internalWorkItem.RefreshWorkItem(fieldsOfRevision), retryLimit);
+
             return internalWorkItem;
         }
 
-        public static WorkItemData GetRevision(this WorkItemData context, int rev)
+        public static WorkItemData GetRevisionAsync(this WorkItemData context, int rev, int retryLimit = 10)
         {
             var originalWi = (WorkItem)context.internalObject;
             var wid = new WorkItemData
@@ -64,9 +67,29 @@ namespace MigrationTools
                 internalObject = originalWi.Store.GetWorkItem(originalWi.Id, rev)
             };
 
-            wid.RefreshWorkItem(context.Revisions[rev].Fields);
+            CallWithRetry(() => wid.RefreshWorkItem(context.Revisions[rev].Fields), retryLimit);
 
             return wid;
+        }
+
+        private static void CallWithRetry(Action action, int retryLimit, int retryCount = 0)
+        {
+            try
+            {
+                action();
+            }
+            catch (Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            {
+                Log.Error(ex, "Team Foundation Service Unavailable:");
+                if (retryLimit > 0)
+                {
+                    retryCount += 1;
+                    System.Threading.Thread.Sleep(new TimeSpan(0, 0, retryCount));
+
+                    Log.Information("RETRYING...");
+                    CallWithRetry(action, retryLimit - 1, retryCount);
+                }
+            }
         }
 
         public static void RefreshWorkItem(this WorkItemData context, Dictionary<string, object> fieldsOfRevision = null)

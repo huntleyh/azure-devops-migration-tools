@@ -9,7 +9,7 @@ namespace MigrationTools
         [Obsolete("This is the v1 Archtiecture, we are movign to V2", false)]
         public static void AddMigrationToolServicesForClientLegacyCore(this IServiceCollection context)
         {
-            context.AddSingleton<WorkItemMigrationContext>();
+            context.AddTransient<WorkItemMigrationContext>();
             context.AddSingleton<TeamMigrationContext>();
             context.AddSingleton<TestConfigurationsMigrationContext>();
             context.AddSingleton<TestPlandsAndSuitesMigrationContext>();
