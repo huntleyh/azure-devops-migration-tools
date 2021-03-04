@@ -4,6 +4,7 @@ using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
+using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using MigrationTools._EngineV1.Configuration;
 using MigrationTools._EngineV1.DataContracts;
@@ -89,6 +90,70 @@ namespace MigrationTools
                     Log.Information("RETRYING...");
                     CallWithRetry(action, retryLimit - 1, retryCount);
                 }
+            }
+        }
+
+        public static TResult CallWithRetry<T1, TResult>(Func<T1, TResult> func, T1 t1, int retryLimit = 0, int retryCount = 0)
+        {
+            try
+            {
+                return func(t1);
+            }
+            catch (Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            {
+                Log.Error(ex, "Team Foundation Service Unavailable:");
+                if (retryLimit > 0)
+                {
+                    retryCount += 1;
+                    System.Threading.Thread.Sleep(new TimeSpan(0, 0, retryCount));
+
+                    Log.Information("RETRYING...");
+                    return CallWithRetry(func, t1, retryLimit - 1, retryCount);
+                }
+                else
+                    throw;
+            }
+        }
+        public static TResult CallWithRetry<T1, T2, TResult>(Func<T1, T2, TResult> func, T1 t1, T2 t2, int retryLimit, int retryCount = 0)
+        {
+            try
+            {
+                return func(t1, t2);
+            }
+            catch (Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            {
+                Log.Error(ex, "Team Foundation Service Unavailable:");
+                if (retryLimit > 0)
+                {
+                    retryCount += 1;
+                    System.Threading.Thread.Sleep(new TimeSpan(0, 0, retryCount));
+
+                    Log.Information("RETRYING...");
+                    return CallWithRetry(func, t1, t2, retryLimit - 1, retryCount);
+                }
+                else
+                    throw;
+            }
+        }
+        public static TResult CallWithRetry<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> func, T1 t1, T2 t2, T3 t3, int retryLimit, int retryCount = 0)
+        {
+            try
+            {
+                return func(t1, t2, t3);
+            }
+            catch (Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            {
+                Log.Error(ex, "Team Foundation Service Unavailable:");
+                if (retryLimit > 0)
+                {
+                    retryCount += 1;
+                    System.Threading.Thread.Sleep(new TimeSpan(0, 0, retryCount));
+
+                    Log.Information("RETRYING...");
+                    return CallWithRetry(func, t1, t2, t3, retryLimit - 1, retryCount);
+                }
+                else
+                    throw;
             }
         }
 

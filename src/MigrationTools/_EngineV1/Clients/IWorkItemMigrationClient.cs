@@ -14,15 +14,15 @@ namespace MigrationTools._EngineV1.Clients
 
         ProjectData GetProject();
 
-        List<WorkItemData> GetWorkItems();
+        List<WorkItemData> GetWorkItems(int retryLimit = 0);
 
         WorkItemData GetWorkItem(string id);
 
         WorkItemData GetWorkItem(int id);
 
-        List<WorkItemData> GetWorkItems(string WIQLQuery);
+        List<WorkItemData> GetWorkItems(string WIQLQuery, int retryLimit = 0);
 
-        List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder);
+        List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder, int retryLimit = 0);
 
         WorkItemData PersistWorkItem(WorkItemData workItem);
 

@@ -25,7 +25,7 @@ namespace MigrationTools.Endpoints
             }
         }
 
-        public List<WorkItemData> GetWorkItems()
+        public List<WorkItemData> GetWorkItems(int retryLimit = 0)
         {
             throw new InvalidOperationException();
         }

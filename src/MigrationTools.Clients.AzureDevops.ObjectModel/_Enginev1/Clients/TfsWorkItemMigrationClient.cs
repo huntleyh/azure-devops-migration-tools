@@ -35,7 +35,7 @@ namespace MigrationTools._EngineV1.Clients
         }
 
         public List<WorkItemData> FilterExistingWorkItems(List<WorkItemData> sourceWorkItems,
-            TfsWiqlDefinition wiqlDefinition, TfsWorkItemMigrationClient sourceWorkItemMigrationClient)
+            TfsWiqlDefinition wiqlDefinition, TfsWorkItemMigrationClient sourceWorkItemMigrationClient, int retryLimit)
         {
             Log.Debug("FilterExistingWorkItems: START | ");
 
@@ -48,7 +48,7 @@ namespace MigrationTools._EngineV1.Clients
                     );
 
             Log.Debug("FilterByTarget: Query Execute...");
-            var targetFoundItems = GetWorkItems(targetQuery);
+            var targetFoundItems = GetWorkItems(targetQuery, retryLimit);
             Log.Debug("FilterByTarget: ... query complete.");
             Log.Debug("FilterByTarget: Found {TargetWorkItemCount} based on the WIQLQueryBit in the target system.", targetFoundItems.Count);
             var targetFoundIds = (from WorkItemData twi in targetFoundItems select GetReflectedWorkItemId(twi))
@@ -176,22 +176,22 @@ namespace MigrationTools._EngineV1.Clients
             return y?.AsWorkItemData();
         }
 
-        public override List<WorkItemData> GetWorkItems()
+        public override List<WorkItemData> GetWorkItems(int retryLimit = 10)
         {
             throw new NotImplementedException();
         }
 
-        public override List<WorkItemData> GetWorkItems(string WIQLQuery)
+        public override List<WorkItemData> GetWorkItems(string WIQLQuery, int retryLimit = 0)
         {
             IWorkItemQueryBuilder wiqb = Services.GetRequiredService<IWorkItemQueryBuilder>();
             wiqb.Query = WIQLQuery;
-            return GetWorkItems(wiqb);
+            return GetWorkItems(wiqb, retryLimit);
         }
 
-        public override List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder)
+        public override List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder, int retryLimit = 0)
         {
             queryBuilder.AddParameter("TeamProject", MigrationClient.Config.AsTeamProjectConfig().Project);
-            return queryBuilder.BuildWIQLQuery(MigrationClient).GetWorkItems();
+            return queryBuilder.BuildWIQLQuery(MigrationClient).GetWorkItems(retryLimit);
         }
 
         public override void InnerConfigure(IMigrationClient migrationClient, bool bypassRules = true)

@@ -12,7 +12,7 @@ namespace MigrationTools.Endpoints
         void Configure(IMigrationClient migrationClient, string query, Dictionary<string, string> parameters);
 
         [Obsolete("For old style code use this, for new style use GetWorkItems2. Return type differs only")]
-        List<WorkItemData> GetWorkItems();
+        List<WorkItemData> GetWorkItems(int retryLimit = 0);
 
         List<DataContracts.WorkItemData> GetWorkItems2();
     }

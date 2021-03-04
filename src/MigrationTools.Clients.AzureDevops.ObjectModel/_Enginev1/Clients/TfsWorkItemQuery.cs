@@ -13,7 +13,7 @@ namespace MigrationTools._EngineV1.Clients
         {
         }
 
-        public override List<WorkItemData> GetWorkItems()
+        public override List<WorkItemData> GetWorkItems(int retryLimit = 0)
         {
             Log.Debug("WorkItemQuery: ===========GetWorkItems=============");
             var wiClient = (TfsWorkItemMigrationClient)MigrationClient.WorkItems;
@@ -25,7 +25,7 @@ namespace MigrationTools._EngineV1.Clients
             {
                 Log.Debug("WorkItemQuery: {0}: {1}", item.Key, item.Value);
             }
-            return GetWorkItemsFromQuery(wiClient).ToWorkItemDataList();
+            return TfsExtensions.CallWithRetry<TfsWorkItemMigrationClient, IList<WorkItem>>(GetWorkItemsFromQuery, wiClient, 0, retryLimit).ToWorkItemDataList();
         }
 
         public override List<MigrationTools.DataContracts.WorkItemData> GetWorkItems2()

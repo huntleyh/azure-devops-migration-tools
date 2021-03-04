@@ -30,7 +30,7 @@ namespace MigrationTools._EngineV1.Clients
             _Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
         }
 
-        public abstract List<WorkItemData> GetWorkItems();
+        public abstract List<WorkItemData> GetWorkItems(int retryLimit = 0);
 
         public abstract List<MigrationTools.DataContracts.WorkItemData> GetWorkItems2();
     }

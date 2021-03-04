@@ -51,11 +51,11 @@ namespace MigrationTools._EngineV1.Clients
 
         public abstract WorkItemData GetWorkItem(int id);
 
-        public abstract List<WorkItemData> GetWorkItems();
+        public abstract List<WorkItemData> GetWorkItems(int retryLimit = 0);
 
-        public abstract List<WorkItemData> GetWorkItems(string WIQLQuery);
+        public abstract List<WorkItemData> GetWorkItems(string WIQLQuery, int retryLimit = 0);
 
-        public abstract List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder);
+        public abstract List<WorkItemData> GetWorkItems(IWorkItemQueryBuilder queryBuilder, int retryLimit = 0);
 
         public abstract void InnerConfigure(IMigrationClient migrationClient, bool bypassRules = true);
 

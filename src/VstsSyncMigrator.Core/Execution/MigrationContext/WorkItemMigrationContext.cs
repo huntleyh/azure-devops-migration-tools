@@ -107,7 +107,7 @@ namespace VstsSyncMigrator.Engine
 
             // Inform the user that he maybe has to be patient now
             contextLog.Information("Querying items to be migrated: {SourceQuery} ...", sourceQuery);
-            var sourceWorkItems = Engine.Source.WorkItems.GetWorkItems(sourceQuery);
+            var sourceWorkItems = Engine.Source.WorkItems.GetWorkItems(sourceQuery, _config.WorkItemCreateRetryLimit);
             contextLog.Information("Replay all revisions of {sourceWorkItemsCount} work items?", sourceWorkItems.Count);
             //////////////////////////////////////////////////
             contextLog.Information("Found target project as {@destProject}", Engine.Target.WorkItems.Project.Name);
@@ -115,7 +115,7 @@ namespace VstsSyncMigrator.Engine
             if (_config.FilterWorkItemsThatAlreadyExistInTarget)
             {
                 contextLog.Information("[FilterWorkItemsThatAlreadyExistInTarget] is enabled. Searching for work items that have already been migrated to the target...", sourceWorkItems.Count());
-                sourceWorkItems = ((TfsWorkItemMigrationClient)Engine.Target.WorkItems).FilterExistingWorkItems(sourceWorkItems, new TfsWiqlDefinition() { OrderBit = _config.WIQLOrderBit, QueryBit = _config.WIQLQueryBit }, (TfsWorkItemMigrationClient)Engine.Source.WorkItems);
+                sourceWorkItems = ((TfsWorkItemMigrationClient)Engine.Target.WorkItems).FilterExistingWorkItems(sourceWorkItems, new TfsWiqlDefinition() { OrderBit = _config.WIQLOrderBit, QueryBit = _config.WIQLQueryBit }, (TfsWorkItemMigrationClient)Engine.Source.WorkItems, _config.WorkItemCreateRetryLimit);
                 contextLog.Information("!! After removing all found work items there are {SourceWorkItemCount} remaining to be migrated.", sourceWorkItems.Count());
             }
             //////////////////////////////////////////////////
