@@ -41,6 +41,11 @@ namespace MigrationTools.Processors
         /// </summary>
         public bool MigrateGitRepositories { get; set; }
 
+        /// <summary>
+        /// Migrate the extensions from source project to target
+        /// </summary>
+        public bool InstallExtensions { get; set; }
+
         public string GitImportServiceConnectionName { get; set; }
 
         /// <summary>
@@ -62,6 +67,7 @@ namespace MigrationTools.Processors
 
         public override void SetDefaults()
         {
+            InstallExtensions = false;
             MigrateGitRepositories = true;
             MigrateBuildPipelines = true;
             MigrateReleasePipelines = true;

@@ -78,13 +78,8 @@ namespace VstsSyncMigrator.Engine
             workItemLog.Write(level, workItemLogTeamplate + message);
         }
 
-        protected override void InternalExecute()
+        internal void InitializeWorkItemMigrationContext()
         {
-            Log.LogInformation("WorkItemMigrationContext::InternalExecute ");
-            if (_config == null)
-            {
-                throw new Exception("You must call Configure() first");
-            }
             var workItemServer = Engine.Source.GetService<WorkItemServer>();
             attachmentEnricher = new TfsAttachmentEnricher(workItemServer, _config.AttachmentWorkingPath, _config.AttachmentMaxSize);
             workItemLinkEnricher = Services.GetRequiredService<TfsWorkItemLinkEnricher>();
@@ -97,6 +92,17 @@ namespace VstsSyncMigrator.Engine
             _witClient = new WorkItemTrackingHttpClient(Engine.Target.Config.AsTeamProjectConfig().Collection, Engine.Target.Credentials);
             //Validation: make sure that the ReflectedWorkItemId field name specified in the config exists in the target process, preferably on each work item type.
             PopulateIgnoreList();
+        }
+
+        protected override void InternalExecute()
+        {
+            Log.LogInformation("WorkItemMigrationContext::InternalExecute ");
+            if (_config == null)
+            {
+                throw new Exception("You must call Configure() first");
+            }
+
+            InitializeWorkItemMigrationContext();
 
             var stopwatch = Stopwatch.StartNew();
             //////////////////////////////////////////////////
@@ -134,33 +140,49 @@ namespace VstsSyncMigrator.Engine
             _totalWorkItem = sourceWorkItems.Count;
             foreach (WorkItemData sourceWorkItemData in sourceWorkItems)
             {
-                var sourceWorkItem = TfsExtensions.ToWorkItem(sourceWorkItemData);
-                workItemLog = contextLog.ForContext("SourceWorkItemId", sourceWorkItem.Id);
-                using (LogContext.PushProperty("sourceWorkItemTypeName", sourceWorkItem.Type.Name))
-                using (LogContext.PushProperty("currentWorkItem", _current))
-                using (LogContext.PushProperty("totalWorkItems", _totalWorkItem))
-                using (LogContext.PushProperty("sourceWorkItemId", sourceWorkItem.Id))
-                using (LogContext.PushProperty("sourceRevisionInt", sourceWorkItem.Revision))
-                using (LogContext.PushProperty("targetWorkItemId", null))
-                {
-                    ProcessWorkItem(sourceWorkItemData, _config.WorkItemCreateRetryLimit);
-                    if (_config.PauseAfterEachWorkItem)
-                    {
-                        Console.WriteLine("Do you want to continue? (y/n)");
-                        if (Console.ReadKey().Key != ConsoleKey.Y)
-                        {
-                            workItemLog.Warning("USER ABORTED");
-                            break;
-                        }
-                    }
-                }
+                if (false == ProcessWorkItemWithLogging(sourceWorkItemData, _current, _totalWorkItem))
+                    break;
             }
             //////////////////////////////////////////////////
             stopwatch.Stop();
 
             contextLog.Information("DONE in {Elapsed}", stopwatch.Elapsed.ToString("c"));
         }
+        internal bool ProcessWorkItemExternal(WorkItemData sourceWorkItemData)
+        {
+            _current = 1;
+            _count = 1;
+            _elapsedms = 0;
+            _totalWorkItem = 1;
 
+            return ProcessWorkItemWithLogging(sourceWorkItemData, _current, _totalWorkItem);
+        }
+
+        private bool ProcessWorkItemWithLogging(WorkItemData sourceWorkItemData, int current, int totalWorkItem)
+        {
+            var sourceWorkItem = TfsExtensions.ToWorkItem(sourceWorkItemData);
+            workItemLog = contextLog.ForContext("SourceWorkItemId", sourceWorkItem.Id);
+
+            using (LogContext.PushProperty("sourceWorkItemTypeName", sourceWorkItem.Type.Name))
+            using (LogContext.PushProperty("currentWorkItem", current))
+            using (LogContext.PushProperty("totalWorkItems", totalWorkItem))
+            using (LogContext.PushProperty("sourceWorkItemId", sourceWorkItem.Id))
+            using (LogContext.PushProperty("sourceRevisionInt", sourceWorkItem.Revision))
+            using (LogContext.PushProperty("targetWorkItemId", null))
+            {
+                ProcessWorkItem(sourceWorkItemData, _config.WorkItemCreateRetryLimit);
+                if (_config.PauseAfterEachWorkItem)
+                {
+                    Console.WriteLine("Do you want to continue? (y/n)");
+                    if (Console.ReadKey().Key != ConsoleKey.Y)
+                    {
+                        workItemLog.Warning("USER ABORTED");
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
         private static void AppendMigratedByFooter(StringBuilder history)
         {
             history.Append("<p>Migrated by <a href='https://dev.azure.com/nkdagility/migration-tools/'>Azure DevOps Migration Tools</a> open source.</p>");
@@ -404,7 +426,7 @@ namespace VstsSyncMigrator.Engine
                         {
                             targetWorkItem.SaveToAzureDevOps();
                         }
-                        catch(ValidationException ve)
+                        catch (ValidationException ve)
                         {
                             TraceWriteLine(LogEventLevel.Error, "Unable to save {sourceWorkItemTypeName}/{sourceWorkItemId}." + Environment.NewLine + ve.ToString(),
                                 new Dictionary<string, object>() {
@@ -431,7 +453,7 @@ namespace VstsSyncMigrator.Engine
                         });
                 }
             }
-            catch(Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
+            catch (Microsoft.TeamFoundation.TeamFoundationServiceUnavailableException ex)
             {
                 Log.LogError(ex, "Team Foundation Service Unavailable:");
                 DoRetry(ref retrys, retryLimit, sourceWorkItem, true);

@@ -26,26 +26,38 @@ namespace MigrationTools.FieldMaps.AzureDevops.ObjectModel
 
         internal override void InternalExecute(WorkItem source, WorkItem target)
         {
-            if (source.Fields.Contains(Config.sourceField1) && source.Fields.Contains(Config.sourceField2))
+            if (source.Fields.Contains(Config.sourceField1) && source.Fields.Contains(Config.sourceField2) && checkContains(source, Config.sourceField3) && checkContains(source, Config.sourceField4))
             {
                 var val1 = source.Fields[Config.sourceField1].Value != null ? source.Fields[Config.sourceField1].Value.ToString() : string.Empty;
                 var val2 = source.Fields[Config.sourceField2].Value != null ? source.Fields[Config.sourceField2].Value.ToString() : string.Empty;
+                var val3 = source.Fields[Config.sourceField3].Value != null ? source.Fields[Config.sourceField3].Value.ToString() : string.Empty;
+                var val4 = source.Fields[Config.sourceField4].Value != null ? source.Fields[Config.sourceField4].Value.ToString() : string.Empty;
+
                 var valT = target.Fields[Config.targetField].Value != null ? target.Fields[Config.targetField].Value.ToString() : string.Empty;
-                var newValT = string.Format(Config.formatExpression, val1, val2);
+                var newValT = string.Format(Config.formatExpression, val1, val2, val3, val4);
                 if (valT.Contains(val2) && val2.Trim().Length > 0)
                 {
-                    Log.LogDebug("FieldMergeMap: [SKIP] field already merged {0}:{1}+{2} to {3}:{4}", source.Id, Config.sourceField1, Config.sourceField2, target.Id, Config.targetField);
+                    Log.LogDebug("FieldMergeMap: [SKIP] field already merged {0}:{1}+{2}+{3}+{4} to {5}:{6}", source.Id, Config.sourceField1, Config.sourceField2, Config.sourceField3, Config.sourceField4, target.Id, Config.targetField);
                 }
                 else if (valT.Equals(newValT))
                 {
-                    Log.LogDebug("FieldMergeMap: [SKIP] field already merged {0}:{1}+{2} to {3}:{4}", source.Id, Config.sourceField1, Config.sourceField2, target.Id, Config.targetField);
+                    Log.LogDebug("FieldMergeMap: [SKIP] field already merged {0}:{1}+{2}+{3}+{4} to {5}:{6}", source.Id, Config.sourceField1, Config.sourceField2, Config.sourceField3, Config.sourceField4, target.Id, Config.targetField);
                 }
                 else
                 {
                     target.Fields[Config.targetField].Value = newValT;
-                    Log.LogDebug("FieldMergeMap: [UPDATE] field merged {0}:{1}+{2} to {3}:{4}", source.Id, Config.sourceField1, Config.sourceField2, target.Id, Config.targetField);
+                    Log.LogDebug("FieldMergeMap: [UPDATE] field merged {0}:{1}+{2}+{3}+{4} to {5}:{6}", source.Id, Config.sourceField1, Config.sourceField2, Config.sourceField3, Config.sourceField4, target.Id, Config.targetField);
                 }
             }
+        }
+
+        private bool checkContains(WorkItem source, string optionalSourceField)
+        {
+            if(string.IsNullOrEmpty(optionalSourceField))
+            {
+                return true;
+            }
+            return source.Fields.Contains(optionalSourceField);
         }
     }
 }

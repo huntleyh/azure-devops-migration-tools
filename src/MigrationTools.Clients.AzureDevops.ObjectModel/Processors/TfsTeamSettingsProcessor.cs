@@ -152,6 +152,8 @@ namespace MigrationTools.Processors
                                 Log.LogWarning("-> Settings for team '{sourceTeamName}'.. not configured", sourceTeam.Name);
                             }
                         }
+
+                        MigrateTeamBoardSettings(sourceTeam, newTeam);
                     }
                 }
                 else
@@ -198,6 +200,11 @@ namespace MigrationTools.Processors
             //////////////////////////////////////////////////
             stopwatch.Stop();
             Log.LogDebug("DONE in {Elapsed} ", stopwatch.Elapsed.ToString("c"));
+        }
+
+        private void MigrateTeamBoardSettings(TeamFoundationTeam sourceTeam, TeamFoundationTeam newTeam)
+        {
+            
         }
     }
 }

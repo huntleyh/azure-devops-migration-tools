@@ -31,6 +31,16 @@ namespace MigrationTools.DataContracts
 
         public string Version { get; }
     }
+    public class ApiUriDomainPrefixAttribute : Attribute
+    {
+        public ApiUriDomainPrefixAttribute(string version)
+        {
+            this.UriDomainPrefix = version;
+        }
+
+        public string UriDomainPrefix { get; }
+        
+    }
     public class ApiOrgLevelAttribute : Attribute
     {
         public bool IsOrgLevel { get; set; }

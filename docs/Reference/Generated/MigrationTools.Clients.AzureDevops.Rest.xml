@@ -103,6 +103,11 @@
             Migrate git repositories
             </summary>
         </member>
+        <member name="P:MigrationTools.Processors.AzureDevOpsPipelineProcessorOptions.InstallExtensions">
+            <summary>
+            Migrate the extensions from source project to target
+            </summary>
+        </member>
         <member name="P:MigrationTools.Processors.AzureDevOpsPipelineProcessorOptions.BuildPipelines">
             <summary>
             List of Build Pipelines to process. If this is `null` then all Build Pipelines will be processed. **Not implemented yet**

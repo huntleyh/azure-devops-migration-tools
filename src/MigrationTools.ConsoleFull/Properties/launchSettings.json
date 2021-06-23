@@ -2,7 +2,7 @@
   "profiles": {
     "execute": {
       "commandName": "Project",
-      "commandLineArgs": "execute -c configuration.json"
+      "commandLineArgs": "execute -c C:\\GitHubRepos\\pwc-test.json"
     },
     "init": {
       "commandName": "Project",
@@ -10,7 +10,7 @@
     },
     "execute2": {
       "commandName": "Project",
-      "commandLineArgs": "execute -c configuration2.json"
+      "commandLineArgs": "execute -c \"C:\\Tools\\configuration-LnPDWorkflow-NASBAnaunnts-Pipelines.json\""
     },
     "init2": {
       "commandName": "Project",

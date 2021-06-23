@@ -80,18 +80,33 @@ namespace MigrationTools.Endpoints
             var apiPathAttribute = typeof(DefinitionType).GetCustomAttributes(typeof(ApiPathAttribute), false).OfType<ApiPathAttribute>().FirstOrDefault();
             var apiVersionAttribute = typeof(DefinitionType).GetCustomAttributes(typeof(ApiVersionAttribute), false).OfType<ApiVersionAttribute>().FirstOrDefault();
             var apiOrgLevelAttribute = typeof(DefinitionType).GetCustomAttributes(typeof(ApiOrgLevelAttribute), false).OfType<ApiOrgLevelAttribute>().FirstOrDefault();
+            var apiUriDomainPrefixAttribute = typeof(DefinitionType).GetCustomAttributes(typeof(ApiUriDomainPrefixAttribute), false).OfType<ApiUriDomainPrefixAttribute>().FirstOrDefault();
+
             if (apiPathAttribute == null)
             {
                 throw new ArgumentNullException($"On the class defintion of '{typeof(DefinitionType).Name}' is the attribute 'ApiName' misssing. Please add the 'ApiName' Attribute to your class");
             }
             string apiVersion = string.Empty;
-            var builder = new UriBuilder(Options.Organisation);
-            builder.Path += ((apiOrgLevelAttribute != null && apiOrgLevelAttribute.IsOrgLevel) ? "" : Options.Project) + "/_apis/" + apiPathAttribute.Path + "/";
+            string domainPrefix = string.Empty;
+
+            string organizationUri = (Options.Organisation.EndsWith("/") == false ? Options.Organisation + "/" : Options.Organisation);
+
+            string fullUri = System.IO.Path.Combine(Options.Organisation, ((apiOrgLevelAttribute != null && apiOrgLevelAttribute.IsOrgLevel) ? "" : Options.Project + "/") + "_apis/" + apiPathAttribute.Path + "/");
+            var builder = new UriBuilder(fullUri);
 
             if (apiVersionAttribute != null)
             {
                 apiVersion = apiVersionAttribute.Version;
             }
+            if (apiUriDomainPrefixAttribute != null)
+            {
+                domainPrefix = apiUriDomainPrefixAttribute.UriDomainPrefix;
+            }
+            if (builder.Host.Contains("dev.azure.com") && !string.IsNullOrEmpty(domainPrefix))
+            {
+                builder.Host = builder.Host.Replace("dev.azure.com", string.Format("{0}.{1}", domainPrefix, "dev.azure.com"));
+            }
+
             if (apiNameAttribute.Name == "Release Piplines")
             {
                 if (builder.Host.Contains("dev.azure.com"))
@@ -126,10 +141,10 @@ namespace MigrationTools.Endpoints
             {
                 var project = await httpResponse.Content.ReadAsAsync<DataContracts.Pipelines.TeamProject>();
 
-                if(project != null && httpResponse.IsSuccessStatusCode)
+                if (project != null && httpResponse.IsSuccessStatusCode)
                 {
                     this.ProjectGuid = project.Id;
-                }    
+                }
             }
         }
 
@@ -233,7 +248,10 @@ namespace MigrationTools.Endpoints
             return migratedDefinitions;
         }
 
-
+        public async Task<List<Mapping<AzDoExtensions>>> CreateInstallExtensionRequestsAsync(IEnumerable<AzDoExtensions> extensionsToBeInstalled, string sourcePAT)
+        {
+            return null;
+        }
         /// <summary>
         /// 
         /// </summary>

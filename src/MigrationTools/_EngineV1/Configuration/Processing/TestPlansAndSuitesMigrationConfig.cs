@@ -9,7 +9,7 @@ namespace MigrationTools._EngineV1.Configuration.Processing
         public string OnlyElementsWithTag { get; set; }
         public string TestPlanQueryBit { get; set; }
         public bool Incremental { get; set; }
-
+        public int RetryLimit { get; set; }
         public string Processor
         {
             get { return "TestPlandsAndSuitesMigrationContext"; }
@@ -30,7 +30,8 @@ namespace MigrationTools._EngineV1.Configuration.Processing
 
         public TestPlansAndSuitesMigrationConfig()
         {
-            Incremental = false;
+            RetryLimit = 100;
+            Incremental = true;
         }
     }
 }

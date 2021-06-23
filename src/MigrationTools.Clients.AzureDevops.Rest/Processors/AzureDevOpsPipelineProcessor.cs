@@ -88,6 +88,10 @@ namespace MigrationTools.Processors
 
             await Target.GetProjectGuid();
 
+            if(_Options.InstallExtensions)
+            {
+                await MigrateExtensions();
+            }
             if (_Options.MigrateGitRepositories)
             {
                 gitRepositoryMappings = await CreateGitRepositories();
@@ -116,6 +120,16 @@ namespace MigrationTools.Processors
             Log.LogDebug("DONE in {Elapsed} ", stopwatch.Elapsed.ToString("c"));
         }
 
+        private async System.Threading.Tasks.Task MigrateExtensions()
+        {
+            Log.LogInformation($"Processing Organization Extensions..");
+
+            var sourceExtensions = await Source.GetApiDefinitionsAsync<AzDoExtensions>();
+            var targetExtensions = await Target.GetApiDefinitionsAsync<AzDoExtensions>();
+
+            await Target.CreateInstallExtensionRequestsAsync(FilterOutExistingDefinitions(sourceExtensions, targetExtensions), Source.Options.AccessToken);
+            return;
+        }
 
         private async Task<IEnumerable<Mapping<GitRepository>>> CreateGitRepositories()
         {

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Framework.Client;
 using Microsoft.TeamFoundation.Framework.Common;
@@ -32,9 +33,11 @@ namespace VstsSyncMigrator.Engine
         private TestManagementContext _targetTestStore;
         private int _totalPlans = 0;
         private int _totalTestCases = 0;
+        private readonly WorkItemMigrationContext _workItemMigrationContext;
 
-        public TestPlandsAndSuitesMigrationContext(IMigrationEngine engine, IServiceProvider services, ITelemetryLogger telemetry, ILogger<TestPlandsAndSuitesMigrationContext> logger) : base(engine, services, telemetry, logger)
+        public TestPlandsAndSuitesMigrationContext(IMigrationEngine engine, IServiceProvider services, ITelemetryLogger telemetry, ILogger<TestPlandsAndSuitesMigrationContext> logger, ILogger<WorkItemMigrationContext> wiLogger) : base(engine, services, telemetry, logger)
         {
+            _workItemMigrationContext = new WorkItemMigrationContext(engine, services, telemetry, wiLogger);
         }
 
         public override string Name
@@ -48,6 +51,12 @@ namespace VstsSyncMigrator.Engine
         public override void Configure(IProcessorConfig config)
         {
             _config = (TestPlansAndSuitesMigrationConfig)config;
+
+            WorkItemMigrationConfig workItemMigrationConfig = new WorkItemMigrationConfig();
+            workItemMigrationConfig.WorkItemCreateRetryLimit = _config.RetryLimit;
+
+            _workItemMigrationContext.Configure(workItemMigrationConfig);
+            _workItemMigrationContext.InitializeWorkItemMigrationContext();
         }
 
         protected override void InternalExecute()
@@ -117,6 +126,7 @@ namespace VstsSyncMigrator.Engine
             List<ITestCase> tcs = new List<ITestCase>();
             foreach (ITestSuiteEntry sourceTestCaseEntry in source.TestCases)
             {
+                WorkItemData sourceWiData = sourceTestCaseEntry.TestCase.WorkItem.AsWorkItemData();
                 _currentTestCases++;
                 InnerLog(source, $"Work item: {sourceTestCaseEntry.Id}", 15);
 
@@ -124,11 +134,19 @@ namespace VstsSyncMigrator.Engine
                     return;
 
                 InnerLog(source, string.Format("    Processing {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
-                WorkItemData wi = Engine.Target.WorkItems.FindReflectedWorkItem(sourceTestCaseEntry.TestCase.WorkItem.AsWorkItemData(), false);
+                WorkItemData wi = Engine.Target.WorkItems.FindReflectedWorkItem(sourceWiData, false);
                 if (wi == null)
                 {
-                    InnerLog(source, string.Format("    Can't find work item for Test Case. Has it been migrated? {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
-                    continue;
+                    InnerLog(source, string.Format("    Can't find work item for Test Case. Now migrating: {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
+
+                    _workItemMigrationContext.ProcessWorkItemExternal(sourceWiData);
+
+                    wi = Engine.Target.WorkItems.FindReflectedWorkItem(sourceWiData, false);
+                    if (wi == null)
+                    {
+                        InnerLog(source, string.Format("    Can't find work item for Test Case. Has it been migrated? {0} : {1} - {2} ", sourceTestCaseEntry.EntryType.ToString(), sourceTestCaseEntry.Id, sourceTestCaseEntry.Title), 15);
+                        continue;
+                    }
                 }
                 var exists = (from tc in target.TestCases
                               where tc.TestCase.WorkItem.Id.ToString() == wi.Id

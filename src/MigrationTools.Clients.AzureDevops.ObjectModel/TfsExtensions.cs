@@ -173,15 +173,25 @@ namespace MigrationTools
 
             // We only need to fill the revisions object if we create a WorkItemData object for the whole WorkItem and
             // we sort it here by Number using a SortedDictionary
-            context.Revisions = fieldsOfRevision == null ? new SortedDictionary<int, RevisionItem>((from Revision x in workItem.Revisions
-                                                                                                    select new RevisionItem()
-                                                                                                    {
-                                                                                                        Index = x.Index,
-                                                                                                        Number = (int)x.Fields["System.Rev"].Value,
-                                                                                                        ChangedDate = (DateTime)x.Fields["System.ChangedDate"].Value,
-                                                                                                        Type = x.Fields["System.WorkItemType"].Value as string,
-                                                                                                        Fields = x.Fields.AsDictionary()
-                                                                                                    }).ToDictionary(r => r.Number, r => r)) : null;
+            var lst = (from Revision x in workItem.Revisions
+                       select new RevisionItem()
+                       {
+                           Index = x.Index,
+                           Number = (int)x.Fields["System.Rev"].Value,
+                           ChangedDate = (DateTime)x.Fields["System.ChangedDate"].Value,
+                           Type = x.Fields["System.WorkItemType"].Value as string,
+                           Fields = x.Fields.AsDictionary()
+                       }).ToList();
+
+            var uniqueList = new List<RevisionItem>();
+            foreach(var entry in lst)
+            {
+                if(false == uniqueList.Exists((i)=> i.Number == entry.Number))
+                {
+                    uniqueList.Add(entry);
+                }
+            }
+            context.Revisions = fieldsOfRevision == null ? new SortedDictionary<int, RevisionItem>(uniqueList.ToDictionary(r => r.Number, r => r)) : null;
         }
 
         public static void SaveToAzureDevOps(this WorkItemData context)

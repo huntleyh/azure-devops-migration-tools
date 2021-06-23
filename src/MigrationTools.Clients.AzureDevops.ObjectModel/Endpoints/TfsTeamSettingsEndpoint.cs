@@ -14,6 +14,8 @@ namespace MigrationTools.Endpoints
 
         public TfsTeamService TfsTeamService { get { return TfsCollection.GetService<TfsTeamService>(); } }
 
+        //public T TfsBoardColumnsService { get { return TfsCollection.GetService<>} }
+
         public TeamSettingsConfigurationService TfsTeamSettingsService { get { return TfsCollection.GetService<TeamSettingsConfigurationService>(); } }
     }
 }

@@ -2,7 +2,7 @@
   "profiles": {
     "MigrationTools.ConsoleUI": {
       "commandName": "Project",
-      "commandLineArgs": "execute --config \"configuration.json\""
+      "commandLineArgs": "execute --config \"C:\\GitHubRepos\\azure-devops-migration-tools\\src\\MigrationTools.ConsoleFull\\bin\\Debug\\net472\\configuration.json\""
     }
   }
 }
