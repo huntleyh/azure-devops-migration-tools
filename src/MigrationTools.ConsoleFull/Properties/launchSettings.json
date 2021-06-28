@@ -10,7 +10,7 @@
     },
     "execute2": {
       "commandName": "Project",
-      "commandLineArgs": "execute -c \"C:\\Tools\\configuration-LnPDWorkflow-NASBAnaunnts-Pipelines.json\""
+      "commandLineArgs": "execute -c \"C:\\Tools\\configuration-huntleyhmsft-testjson.json\""
     },
     "init2": {
       "commandName": "Project",

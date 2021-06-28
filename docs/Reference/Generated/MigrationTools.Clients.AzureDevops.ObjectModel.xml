@@ -79,6 +79,12 @@
             Native TFS Processor, does not work with any other Endpoints.
             </summary>
         </member>
+        <member name="M:MigrationTools.Processors.TfsTeamSettingsProcessor.GetHttpClient(System.String,System.String)">
+            <summary>
+            Create a new instance of HttpClient including Headers
+            </summary>
+            <returns>HttpClient</returns>
+        </member>
         <member name="P:MigrationTools.Processors.TfsTeamSettingsProcessorOptions.MigrateTeamSettings">
             <summary>
             Migrate original team settings after their creation on target team project
