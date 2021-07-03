@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Framework.Common;
 using Microsoft.TeamFoundation.ProcessConfiguration.Client;
 using MigrationTools.DataContracts;
 using MigrationTools.DataContracts.Pipelines;
@@ -82,6 +83,7 @@ namespace MigrationTools.Processors
             Log.LogInformation("TfsTeamSettingsProcessor::InternalExecute: Found {0} teams in Source?", sourceTeams.Count);
             //////////////////////////////////////////////////
             List<TeamFoundationTeam> targetTeams = Target.TfsTeamService.QueryTeams(Target.Project).ToList();
+
             Log.LogDebug("Found {0} teams in Target?", sourceTeams.Count);
             //////////////////////////////////////////////////
             int current = sourceTeams.Count;
@@ -162,13 +164,27 @@ namespace MigrationTools.Processors
                             }
                         }
 
-                        if (MigrateTeamBoardSettings(sourceTeam, newTeam).Result)
+                        if (_Options.MigrateBoards == true)
                         {
-                            Log.LogDebug("-> Team '{0}' Board settings... applied", newTeam.Name);
+                            if (MigrateTeamBoardSettings(sourceTeam, newTeam).Result)
+                            {
+                                Log.LogDebug("-> Team '{0}' Board settings... applied", newTeam.Name);
+                            }
+                            else
+                            {
+                                Log.LogWarning("-> Settings for team '{sourceTeamName}'.. Could not migrate board settings", sourceTeam.Name);
+                            }
                         }
-                        else
+                        if (_Options.MigrateTeamSettings == true)
                         {
-                            Log.LogWarning("-> Settings for team '{sourceTeamName}'.. Could not migrate board settings", sourceTeam.Name);
+                            if (MigrateTeamMembers(sourceTeam, newTeam).Result)
+                            {
+                                Log.LogDebug("-> Team '{0}' Members migrated", newTeam.Name);
+                            }
+                            else
+                            {
+                                Log.LogWarning("-> Members for team '{sourceTeamName}'.. Could not migrate team members", sourceTeam.Name);
+                            }
                         }
                     }
                 }
@@ -217,6 +233,50 @@ namespace MigrationTools.Processors
             stopwatch.Stop();
             Log.LogDebug("DONE in {Elapsed} ", stopwatch.Elapsed.ToString("c"));
         }
+
+        private async Task<bool> MigrateTeamMembers(TeamFoundationTeam sourceTeam, TeamFoundationTeam newTeam)
+        {
+            var sourceHttpClient = GetHttpClient(Source.Options.Organisation, Source.Options.AccessToken);
+            var targetHttpClient = GetHttpClient(Target.Options.Organisation, Target.Options.AccessToken);
+
+            var sourceMembers = await GetTeamMembers(sourceHttpClient, Source.Options.Project, sourceTeam.Name);
+            var targetMembers = await GetTeamMembers(targetHttpClient, Target.Options.Project, newTeam.Name);
+
+            var targetTeam = await GetTeam(targetHttpClient, Target.Options.Project, newTeam.Name);
+
+            foreach (var member in sourceMembers)
+            {
+                var existing = targetMembers.FirstOrDefault((m) => m.identity.uniqueName == member.identity.uniqueName);
+
+                if (existing == null)
+                {
+                    if (false == await addTeamMember(targetHttpClient, Target.Options.Organisation, targetTeam.id, member.identity.id))
+                    {
+                        Log.LogWarning("-> Team '{0}' ... Could not add member: {1}", sourceTeam.Name, member.identity.uniqueName);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private async Task<bool> addTeamMember(HttpClient httpClient, string organization, string groupId, string memberId)
+        {
+            string url = string.Format("https://vsaex.dev.azure.com/{0}/_apis/GroupEntitlements/{1}/members/{2}?api-version=6.1-preview.1"
+                                    , GetOrganization(organization), groupId, memberId);
+
+            var content = new StringContent(string.Empty, Encoding.UTF8, "application/json");
+
+            var res = await httpClient.PutAsync(url, content);
+
+            if (res.IsSuccessStatusCode == false)
+            {
+                Log.LogWarning("-> FAILED to add team member: {0}", await res.Content.ReadAsStringAsync());
+                return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Create a new instance of HttpClient including Headers
         /// </summary>
@@ -252,7 +312,7 @@ namespace MigrationTools.Processors
             {
                 var sourceBoardColumns = await GetBoardColumns(sourceHttpClient, Source.Options.Project, sourceTeam, board);
                 var sourceBoardRows = await GetBoardRows(sourceHttpClient, Source.Options.Project, sourceTeam, board);
-                                
+
                 var targetBoard = FindTargetBoard(targetBoards, targetBoardColumnsMappedToBoards, sourceBoardColumns);
                 if (targetBoard != null)
                 {
@@ -337,7 +397,7 @@ namespace MigrationTools.Processors
 
             var res = await httpClient.PutAsync(url, content);
 
-            if(res.IsSuccessStatusCode == false)
+            if (res.IsSuccessStatusCode == false)
             {
                 Log.LogWarning("-> FAILED to update Board columns: ", await res.Content.ReadAsStringAsync());
                 return false;
@@ -408,9 +468,9 @@ namespace MigrationTools.Processors
             }
             // Ensure we have all required work item types specified for this column
             // using the template column mappings provided.
-            foreach(var key in templateStateMappings.Keys)
+            foreach (var key in templateStateMappings.Keys)
             {
-                if(column.stateMappings.ContainsKey(key) == false)
+                if (column.stateMappings.ContainsKey(key) == false)
                 {
                     column.stateMappings.Add(key, templateStateMappings[key]);
                 }
@@ -454,6 +514,44 @@ namespace MigrationTools.Processors
                 mapping.Add(board.id, columns);
             }
             return mapping;
+        }
+
+        private async Task<List<TeamMember>> GetTeamMembers(HttpClient httpClient, string project, string teamName)
+        {
+            string url = string.Format("{0}/_apis/projects/{1}/teams/{2}/members?api-version=6.1-preview.2", httpClient.BaseAddress, project, teamName);
+
+            var res = await httpClient.GetAsync(url);
+
+            var members = JsonConvert.DeserializeObject<TeamMembersResponse>(await res.Content.ReadAsStringAsync());
+
+            return members.value;
+        }
+
+        private async Task<Team> GetTeam(HttpClient httpClient, string project, string teamName)
+        {
+            string url = string.Format("{0}/_apis/projects/{1}/teams/{2}?api-version=6.1-preview.3", httpClient.BaseAddress, project, teamName);
+
+            var res = await httpClient.GetAsync(url);
+
+            var team = JsonConvert.DeserializeObject<Team>(await res.Content.ReadAsStringAsync());
+
+            return team;
+        }
+
+        private string GetOrganization(string organizationUri)
+        {
+            string newUri = "dev.azure.com";
+            string oldUri = "visualstudio.com";
+
+            if (organizationUri.Contains(newUri))
+            {
+                return organizationUri.Substring(organizationUri.IndexOf(newUri) + (newUri.Length + 1)).Replace("/", "");
+            }
+            else if (organizationUri.Contains(oldUri))
+            {
+                return organizationUri.Substring(0, organizationUri.IndexOf(oldUri)).Replace("https://", "").Replace("http://", "");
+            }
+            return organizationUri;
         }
 
         private async Task<List<Board>> GetBoards(HttpClient httpClient, string project, TeamFoundationTeam team)

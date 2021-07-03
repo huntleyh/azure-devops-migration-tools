@@ -28,6 +28,8 @@ namespace MigrationTools.Processors
         /// List of Teams to process. If this is `null` then all teams will be processed.
         /// </summary>
         public List<string> Teams { get; set; }
+        public bool MigrateMembers { get; set; }
+        public bool MigrateBoards { get; set; }
 
         public override Type ToConfigure => typeof(TfsTeamSettingsProcessor);
 
@@ -38,6 +40,8 @@ namespace MigrationTools.Processors
 
         public override void SetDefaults()
         {
+            MigrateMembers = true;
+            MigrateBoards = true;
             MigrateTeamSettings = true;
             UpdateTeamSettings = true;
             PrefixProjectToNodes = false;
